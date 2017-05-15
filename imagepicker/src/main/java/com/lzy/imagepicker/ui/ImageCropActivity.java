@@ -12,7 +12,7 @@ import android.widget.TextView;
 import com.lzy.imagepicker.util.BitmapUtil;
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.R;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepicker.view.CropImageView;
 
 import java.io.File;
@@ -34,7 +34,7 @@ public class ImageCropActivity extends ImageBaseActivity implements View.OnClick
     private boolean mIsSaveRectangle;
     private int mOutputX;
     private int mOutputY;
-    private ArrayList<ImageItem> mImageItems;
+    private ArrayList<MediaItem> mMediaItems;
     private ImagePicker imagePicker;
 
     @Override
@@ -58,8 +58,8 @@ public class ImageCropActivity extends ImageBaseActivity implements View.OnClick
         mOutputX = imagePicker.getOutPutX();
         mOutputY = imagePicker.getOutPutY();
         mIsSaveRectangle = imagePicker.isSaveRectangle();
-        mImageItems = imagePicker.getSelectedImages();
-        String imagePath = mImageItems.get(0).path;
+        mMediaItems = imagePicker.getSelectedMedias();
+        String imagePath = mMediaItems.get(0).path;
 
         mCropImageView.setFocusStyle(imagePicker.getStyle());
         mCropImageView.setFocusWidth(imagePicker.getFocusWidth());
@@ -110,13 +110,13 @@ public class ImageCropActivity extends ImageBaseActivity implements View.OnClick
 //        Toast.makeText(ImageCropActivity.this, "裁剪成功:" + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
 
         //裁剪后替换掉返回数据的内容，但是不要改变全局中的选中数据
-        mImageItems.remove(0);
-        ImageItem imageItem = new ImageItem();
-        imageItem.path = file.getAbsolutePath();
-        mImageItems.add(imageItem);
+        mMediaItems.remove(0);
+        MediaItem mediaItem = new MediaItem();
+        mediaItem.path = file.getAbsolutePath();
+        mMediaItems.add(mediaItem);
 
         Intent intent = new Intent();
-        intent.putExtra(ImagePicker.EXTRA_RESULT_ITEMS, mImageItems);
+        intent.putExtra(ImagePicker.EXTRA_RESULT_ITEMS, mMediaItems);
         setResult(ImagePicker.RESULT_CODE_ITEMS, intent);   //单选不需要裁剪，返回数据
         finish();
     }

@@ -27,6 +27,9 @@
             android:name=".ui.ImagePreviewActivity"
             android:configChanges="orientation|screenSize"
             android:theme="@style/ImagePickerThemeFullScreen"/>
+        <activity
+            android:name=".ui.PlayVideoActivity"
+            android:configChanges="orientation|screenSize"/>
 
         <provider
             android:authorities="${applicationId}.provider"

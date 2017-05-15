@@ -10,17 +10,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.R;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepicker.ui.ImageBaseActivity;
 import com.lzy.imagepicker.ui.ImageGridActivity;
 import com.lzy.imagepicker.util.Utils;
 import com.lzy.imagepicker.view.SuperCheckBox;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * 加载相册图片的RecyclerView适配器
@@ -43,8 +45,9 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
     private static final int ITEM_TYPE_NORMAL = 1;  //第一个条目不是相机
     private ImagePicker imagePicker;
     private Activity mActivity;
-    private ArrayList<ImageItem> images;       //当前需要显示的所有的图片数据
-    private ArrayList<ImageItem> mSelectedImages; //全局保存的已经选中的图片数据
+    private ArrayList<MediaItem> medias;            //当前需要显示的所有的媒体文件数据
+    private ArrayList<MediaItem> mSelectedImages;   //全局保存的已经选中的媒体文件数据
+    private ArrayList<MediaItem> mSelectedVideos;   //全局保存的已经选中的视频文件数据
     private boolean isShowCamera;         //是否显示拍照按钮
     private int mImageSize;               //每个条目的大小
     private LayoutInflater mInflater;
@@ -55,27 +58,28 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
     }
 
     public interface OnImageItemClickListener {
-        void onImageItemClick(View view, ImageItem imageItem, int position);
+        void onImageItemClick(View view, MediaItem mediaItem, int position);
     }
 
-    public void refreshData(ArrayList<ImageItem> images) {
-        if (images == null || images.size() == 0) this.images = new ArrayList<>();
-        else this.images = images;
+    public void refreshData(ArrayList<MediaItem> images) {
+        if (images == null || images.size() == 0) this.medias = new ArrayList<>();
+        else this.medias = images;
         notifyDataSetChanged();
     }
 
     /**
      * 构造方法
      */
-    public ImageRecyclerAdapter(Activity activity, ArrayList<ImageItem> images) {
+    public ImageRecyclerAdapter(Activity activity, ArrayList<MediaItem> medias) {
         this.mActivity = activity;
-        if (images == null || images.size() == 0) this.images = new ArrayList<>();
-        else this.images = images;
+        if (medias == null || medias.size() == 0) this.medias = new ArrayList<>();
+        else this.medias = medias;
 
         mImageSize = Utils.getImageItemWidth(mActivity);
         imagePicker = ImagePicker.getInstance();
         isShowCamera = imagePicker.isShowCamera();
-        mSelectedImages = imagePicker.getSelectedImages();
+        mSelectedImages = imagePicker.getSelectedMedias();
+        mSelectedVideos = imagePicker.getSelectedVideos();
         mInflater = LayoutInflater.from(activity);
     }
 
@@ -109,15 +113,15 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
 
     @Override
     public int getItemCount() {
-        return isShowCamera ? images.size() + 1 : images.size();
+        return isShowCamera ? medias.size() + 1 : medias.size();
     }
 
-    public ImageItem getItem(int position) {
+    public MediaItem getItem(int position) {
         if (isShowCamera) {
             if (position == 0) return null;
-            return images.get(position - 1);
+            return medias.get(position - 1);
         } else {
-            return images.get(position);
+            return medias.get(position);
         }
     }
 
@@ -127,6 +131,8 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
         ImageView ivThumb;
         View mask;
         SuperCheckBox cbCheck;
+        ImageView videoIcon;
+        TextView videoDuration;
 
         ImageViewHolder(View itemView) {
             super(itemView);
@@ -134,35 +140,64 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
             ivThumb = (ImageView) itemView.findViewById(R.id.iv_thumb);
             mask = itemView.findViewById(R.id.mask);
             cbCheck = (SuperCheckBox) itemView.findViewById(R.id.cb_check);
+            videoIcon = (ImageView) itemView.findViewById(R.id.video_icon);
+            videoDuration = (TextView) itemView.findViewById(R.id.video_duration);
             itemView.setLayoutParams(new AbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mImageSize)); //让图片是个正方形
         }
 
         void bind(final int position){
-            final ImageItem imageItem = getItem(position);
+            final MediaItem mediaItem = getItem(position);
+            final String mimeType = mediaItem.mimeType;
+            videoIcon.setVisibility(View.GONE);
+            videoDuration.setVisibility(View.GONE);
+            if (mimeType.startsWith("video")) {
+                videoIcon.setVisibility(View.VISIBLE);
+                videoDuration.setVisibility(View.VISIBLE);
+                videoDuration.setText(formatDuration(mediaItem.duration));
+            }
             ivThumb.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (listener != null) listener.onImageItemClick(rootView, imageItem, position);
+                    if (listener != null) listener.onImageItemClick(rootView, mediaItem, position);
                 }
             });
             cbCheck.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    int selectLimit = imagePicker.getSelectLimit();
-                    if (cbCheck.isChecked() && mSelectedImages.size() >= selectLimit) {
-                        Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.select_limit, selectLimit), Toast.LENGTH_SHORT).show();
-                        cbCheck.setChecked(false);
-                        mask.setVisibility(View.GONE);
+                    int mediaLimit = imagePicker.getMediaLimit();
+                    int videoLimit = imagePicker.getVideoLimit();
+                    if (mimeType.startsWith("video")) {
+                        if (cbCheck.isChecked() && mSelectedVideos.size() >= videoLimit) {
+                            Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.video_limit, videoLimit), Toast.LENGTH_SHORT).show();
+                            cbCheck.setChecked(false);
+                            mask.setVisibility(View.GONE);
+                        } else {
+                            if (cbCheck.isChecked() && mSelectedImages.size() >= mediaLimit) {
+                                Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.select_limit, mediaLimit), Toast.LENGTH_SHORT).show();
+                                cbCheck.setChecked(false);
+                                mask.setVisibility(View.GONE);
+                            } else {
+                                imagePicker.addSelectedMediaItem(position, mediaItem, cbCheck.isChecked());
+                                imagePicker.addSelectedVideoItem(position, mediaItem, cbCheck.isChecked());
+                                mask.setVisibility(View.VISIBLE);
+                            }
+                        }
                     } else {
-                        imagePicker.addSelectedImageItem(position, imageItem, cbCheck.isChecked());
-                        mask.setVisibility(View.VISIBLE);
+                        if (cbCheck.isChecked() && mSelectedImages.size() >= mediaLimit) {
+                            Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.select_limit, mediaLimit), Toast.LENGTH_SHORT).show();
+                            cbCheck.setChecked(false);
+                            mask.setVisibility(View.GONE);
+                        } else {
+                            imagePicker.addSelectedMediaItem(position, mediaItem, cbCheck.isChecked());
+                            mask.setVisibility(View.VISIBLE);
+                        }
                     }
                 }
             });
             //根据是否多选，显示或隐藏checkbox
             if (imagePicker.isMultiMode()) {
                 cbCheck.setVisibility(View.VISIBLE);
-                boolean checked = mSelectedImages.contains(imageItem);
+                boolean checked = mSelectedImages.contains(mediaItem);
                 if (checked) {
                     mask.setVisibility(View.VISIBLE);
                     cbCheck.setChecked(true);
@@ -173,9 +208,16 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
             } else {
                 cbCheck.setVisibility(View.GONE);
             }
-            imagePicker.getImageLoader().displayImage(mActivity, imageItem.path, ivThumb, mImageSize, mImageSize); //显示图片
+            imagePicker.getImageLoader().displayImage(mActivity, mediaItem.path, ivThumb, mImageSize, mImageSize); //显示图片
         }
 
+    }
+
+    private String formatDuration(long duration) {
+        int length = Math.round(duration / 1000.0f);
+        int min = length % 3600 / 60;
+        int second = length % 60;
+        return String.format(Locale.CHINA, "%d:%02d", min, second);
     }
 
     private class CameraViewHolder extends ViewHolder{

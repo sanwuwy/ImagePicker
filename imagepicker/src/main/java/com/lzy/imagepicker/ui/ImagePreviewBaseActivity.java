@@ -11,7 +11,7 @@ import com.lzy.imagepicker.R;
 import com.lzy.imagepicker.util.Utils;
 import com.lzy.imagepicker.adapter.ImagePageAdapter;
 import com.lzy.imagepicker.DataHolder;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepicker.view.ViewPagerFixed;
 
 import java.util.ArrayList;
@@ -28,10 +28,11 @@ import java.util.ArrayList;
 public abstract class ImagePreviewBaseActivity extends ImageBaseActivity {
 
     protected ImagePicker imagePicker;
-    protected ArrayList<ImageItem> mImageItems;      //跳转进ImagePreviewFragment的图片文件夹
+    protected ArrayList<MediaItem> mMediaItems;      //跳转进ImagePreviewFragment的图片文件夹
     protected int mCurrentPosition = 0;              //跳转进ImagePreviewFragment时的序号，第几个图片
     protected TextView mTitleCount;                  //显示当前图片的位置  例如  5/31
-    protected ArrayList<ImageItem> selectedImages;   //所有已经选中的图片
+    protected ArrayList<MediaItem> selectedImages;   //所有已经选中的媒体文件
+    protected ArrayList<MediaItem> selectedVideos;   //所有已经选中的视频
     protected View content;
     protected View topBar;
     protected ViewPagerFixed mViewPager;
@@ -48,15 +49,16 @@ public abstract class ImagePreviewBaseActivity extends ImageBaseActivity {
 
         if (isFromItems){
             // 据说这样会导致大量图片崩溃
-            mImageItems = (ArrayList<ImageItem>) getIntent().getSerializableExtra(ImagePicker.EXTRA_IMAGE_ITEMS);
+            mMediaItems = (ArrayList<MediaItem>) getIntent().getSerializableExtra(ImagePicker.EXTRA_IMAGE_ITEMS);
         }else{
             // 下面采用弱引用会导致预览崩溃
-            mImageItems =  (ArrayList<ImageItem>) DataHolder.getInstance().retrieve(DataHolder.DH_CURRENT_IMAGE_FOLDER_ITEMS);
+            mMediaItems =  (ArrayList<MediaItem>) DataHolder.getInstance().retrieve(DataHolder.DH_CURRENT_IMAGE_FOLDER_ITEMS);
         }
 
 
         imagePicker = ImagePicker.getInstance();
-        selectedImages = imagePicker.getSelectedImages();
+        selectedImages = imagePicker.getSelectedMedias();
+        selectedVideos = imagePicker.getSelectedVideos();
 
         //初始化控件
         content = findViewById(R.id.content);
@@ -79,7 +81,7 @@ public abstract class ImagePreviewBaseActivity extends ImageBaseActivity {
         mTitleCount = (TextView) findViewById(R.id.tv_des);
 
         mViewPager = (ViewPagerFixed) findViewById(R.id.viewpager);
-        mAdapter = new ImagePageAdapter(this, mImageItems);
+        mAdapter = new ImagePageAdapter(this, mMediaItems);
         mAdapter.setPhotoViewClickListener(new ImagePageAdapter.PhotoViewClickListener() {
             @Override
             public void OnPhotoTapListener(View view, float v, float v1) {
@@ -90,7 +92,7 @@ public abstract class ImagePreviewBaseActivity extends ImageBaseActivity {
         mViewPager.setCurrentItem(mCurrentPosition, false);
 
         //初始化当前页面的状态
-        mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mImageItems.size()));
+        mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mMediaItems.size()));
     }
 
     /** 单击时，隐藏头和尾 */

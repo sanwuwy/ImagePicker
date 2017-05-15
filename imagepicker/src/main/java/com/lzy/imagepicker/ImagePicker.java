@@ -14,8 +14,8 @@ import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.util.Log;
 
-import com.lzy.imagepicker.bean.ImageFolder;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaFolder;
+import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepicker.loader.ImageLoader;
 import com.lzy.imagepicker.util.ProviderUtil;
 import com.lzy.imagepicker.util.Utils;
@@ -57,7 +57,8 @@ public class ImagePicker {
     public static final String EXTRA_FROM_ITEMS = "extra_from_items";
 
     private boolean multiMode = true;    //图片选择模式
-    private int selectLimit = 9;         //最大选择图片数量
+    private int mediaLimit = 9;         //最大选择图片数量
+    private int videoLimit = 3;          //最大选择视频数量
     private boolean crop = true;         //裁剪
     private boolean showCamera = true;   //显示相机
     private boolean isSaveRectangle = false;  //裁剪后的图片是否是矩形，否者跟随裁剪框的形状
@@ -70,9 +71,11 @@ public class ImagePicker {
     private File cropCacheFolder;
     private File takeImageFile;
     public Bitmap cropBitmap;
+    private boolean isSelectVideo;
 
-    private ArrayList<ImageItem> mSelectedImages = new ArrayList<>();   //选中的图片集合
-    private List<ImageFolder> mImageFolders;      //所有的图片文件夹
+    private ArrayList<MediaItem> mSelectedMedias = new ArrayList<>();   //选中的媒体文件集合
+    private ArrayList<MediaItem> mSelectedVideos = new ArrayList<>();   //选中的视频集合
+    private List<MediaFolder> mMediaFolders;      //所有的图片文件夹
     private int mCurrentImageFolderPosition = 0;  //当前选中的文件夹位置 0表示所有图片
     private List<OnImageSelectedListener> mImageSelectedListeners;          // 图片选中的监听回调
 
@@ -100,12 +103,20 @@ public class ImagePicker {
         this.multiMode = multiMode;
     }
 
-    public int getSelectLimit() {
-        return selectLimit;
+    public int getMediaLimit() {
+        return mediaLimit;
     }
 
-    public void setSelectLimit(int selectLimit) {
-        this.selectLimit = selectLimit;
+    public void setMediaLimit(int mediaLimit) {
+        this.mediaLimit = mediaLimit;
+    }
+
+    public int getVideoLimit() {
+        return videoLimit;
+    }
+
+    public void setVideoLimit(int videoLimit) {
+        this.videoLimit = videoLimit;
     }
 
     public boolean isCrop() {
@@ -130,6 +141,14 @@ public class ImagePicker {
 
     public void setSaveRectangle(boolean isSaveRectangle) {
         this.isSaveRectangle = isSaveRectangle;
+    }
+
+    public boolean isSelectVideo() {
+        return isSelectVideo;
+    }
+
+    public void setSelectVideo(boolean selectVideo) {
+        isSelectVideo = selectVideo;
     }
 
     public int getOutPutX() {
@@ -195,12 +214,12 @@ public class ImagePicker {
         this.style = style;
     }
 
-    public List<ImageFolder> getImageFolders() {
-        return mImageFolders;
+    public List<MediaFolder> getImageFolders() {
+        return mMediaFolders;
     }
 
-    public void setImageFolders(List<ImageFolder> imageFolders) {
-        mImageFolders = imageFolders;
+    public void setImageFolders(List<MediaFolder> mediaFolders) {
+        mMediaFolders = mediaFolders;
     }
 
     public int getCurrentImageFolderPosition() {
@@ -211,28 +230,43 @@ public class ImagePicker {
         mCurrentImageFolderPosition = mCurrentSelectedImageSetPosition;
     }
 
-    public ArrayList<ImageItem> getCurrentImageFolderItems() {
-        return mImageFolders.get(mCurrentImageFolderPosition).images;
+    public ArrayList<MediaItem> getCurrentImageFolderItems() {
+        return mMediaFolders.get(mCurrentImageFolderPosition).images;
     }
 
-    public boolean isSelect(ImageItem item) {
-        return mSelectedImages.contains(item);
+    public boolean isSelectMedia(MediaItem item) {
+        return mSelectedMedias.contains(item);
     }
 
-    public int getSelectImageCount() {
-        if (mSelectedImages == null) {
+    public boolean isSelectVideo(MediaItem item) {
+        return mSelectedVideos.contains(item);
+    }
+
+    public int getSelectMediaCount() {
+        if (mSelectedMedias == null) {
             return 0;
         }
-        return mSelectedImages.size();
+        return mSelectedMedias.size();
     }
 
-    public ArrayList<ImageItem> getSelectedImages() {
-        return mSelectedImages;
+    public int getSelectVideoCount() {
+        if (mSelectedVideos == null) {
+            return 0;
+        }
+        return mSelectedVideos.size();
     }
 
+    public ArrayList<MediaItem> getSelectedMedias() {
+        return mSelectedMedias;
+    }
 
-    public void clearSelectedImages() {
-        if (mSelectedImages != null) mSelectedImages.clear();
+    public ArrayList<MediaItem> getSelectedVideos() {
+        return mSelectedVideos;
+    }
+
+    public void clearSelectedMedias() {
+        if (mSelectedMedias != null) mSelectedMedias.clear();
+        if (mSelectedVideos != null) mSelectedVideos.clear();
     }
 
     public void clear() {
@@ -240,12 +274,15 @@ public class ImagePicker {
             mImageSelectedListeners.clear();
             mImageSelectedListeners = null;
         }
-        if (mImageFolders != null) {
-            mImageFolders.clear();
-            mImageFolders = null;
+        if (mMediaFolders != null) {
+            mMediaFolders.clear();
+            mMediaFolders = null;
         }
-        if (mSelectedImages != null) {
-            mSelectedImages.clear();
+        if (mSelectedMedias != null) {
+            mSelectedMedias.clear();
+        }
+        if (mSelectedVideos != null) {
+            mSelectedVideos.clear();
         }
         mCurrentImageFolderPosition = 0;
     }
@@ -319,7 +356,7 @@ public class ImagePicker {
      * 图片选中的监听
      */
     public interface OnImageSelectedListener {
-        void onImageSelected(int position, ImageItem item, boolean isAdd);
+        void onImageSelected(int position, MediaItem item, boolean isAdd);
     }
 
     public void addOnImageSelectedListener(OnImageSelectedListener l) {
@@ -332,20 +369,32 @@ public class ImagePicker {
         mImageSelectedListeners.remove(l);
     }
 
-    public void addSelectedImageItem(int position, ImageItem item, boolean isAdd) {
-        if (isAdd) mSelectedImages.add(item);
-        else mSelectedImages.remove(item);
+    public void addSelectedMediaItem(int position, MediaItem item, boolean isAdd) {
+        if (isAdd) mSelectedMedias.add(item);
+        else mSelectedMedias.remove(item);
         notifyImageSelectedChanged(position, item, isAdd);
     }
 
-    public void setSelectedImages(ArrayList<ImageItem> selectedImages) {
+    public void addSelectedVideoItem(int position, MediaItem item, boolean isAdd) {
+        if (isAdd) mSelectedVideos.add(item);
+        else mSelectedVideos.remove(item);
+    }
+
+    public void setSelectedMedias(ArrayList<MediaItem> selectedImages) {
         if (selectedImages == null) {
             return;
         }
-        this.mSelectedImages = selectedImages;
+        this.mSelectedMedias = selectedImages;
     }
 
-    private void notifyImageSelectedChanged(int position, ImageItem item, boolean isAdd) {
+    public void setSelectedVideos(ArrayList<MediaItem> selectedVideos) {
+        if (selectedVideos == null) {
+            return;
+        }
+        this.mSelectedVideos = selectedVideos;
+    }
+
+    private void notifyImageSelectedChanged(int position, MediaItem item, boolean isAdd) {
         if (mImageSelectedListeners == null) return;
         for (OnImageSelectedListener l : mImageSelectedListeners) {
             l.onImageSelected(position, item, isAdd);

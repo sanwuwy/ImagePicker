@@ -21,7 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lzy.imagepicker.ImagePicker;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepicker.ui.ImageGridActivity;
 import com.lzy.imagepicker.view.CropImageView;
 import com.lzy.imagepickerdemo.imageloader.GlideImageLoader;
@@ -156,7 +156,7 @@ public class ImagePickerActivity extends AppCompatActivity implements SeekBar.On
 
                 Intent intent = new Intent(this, ImageGridActivity.class);
                 intent.putExtra(ImageGridActivity.EXTRAS_IMAGES,images);
-                //ImagePicker.getInstance().setSelectedImages(images);
+                //ImagePicker.getInstance().setSelectedMedias(images);
                 startActivityForResult(intent, 100);
                 break;
             case R.id.btn_wxDemo:
@@ -183,7 +183,7 @@ public class ImagePickerActivity extends AppCompatActivity implements SeekBar.On
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         tv_select_limit.setText(String.valueOf(progress));
-        imagePicker.setSelectLimit(progress);
+        imagePicker.setMediaLimit(progress);
     }
 
     @Override
@@ -195,14 +195,14 @@ public class ImagePickerActivity extends AppCompatActivity implements SeekBar.On
     }
 
 
-    ArrayList<ImageItem> images = null;
+    ArrayList<MediaItem> images = null;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == ImagePicker.RESULT_CODE_ITEMS) {
             if (data != null && requestCode == 100) {
-                images = (ArrayList<ImageItem>) data.getSerializableExtra(ImagePicker.EXTRA_RESULT_ITEMS);
+                images = (ArrayList<MediaItem>) data.getSerializableExtra(ImagePicker.EXTRA_RESULT_ITEMS);
                 MyAdapter adapter = new MyAdapter(images);
                 gridView.setAdapter(adapter);
             } else {
@@ -215,13 +215,13 @@ public class ImagePickerActivity extends AppCompatActivity implements SeekBar.On
 
     private class MyAdapter extends BaseAdapter {
 
-        private List<ImageItem> items;
+        private List<MediaItem> items;
 
-        public MyAdapter(List<ImageItem> items) {
+        public MyAdapter(List<MediaItem> items) {
             this.items = items;
         }
 
-        public void setData(List<ImageItem> items) {
+        public void setData(List<MediaItem> items) {
             this.items = items;
             notifyDataSetChanged();
         }
@@ -232,7 +232,7 @@ public class ImagePickerActivity extends AppCompatActivity implements SeekBar.On
         }
 
         @Override
-        public ImageItem getItem(int position) {
+        public MediaItem getItem(int position) {
             return items.get(position);
         }
 
