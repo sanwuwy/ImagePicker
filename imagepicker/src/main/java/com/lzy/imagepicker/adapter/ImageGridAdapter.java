@@ -14,7 +14,7 @@ import android.widget.Toast;
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.R;
 import com.lzy.imagepicker.util.Utils;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepicker.ui.ImageBaseActivity;
 import com.lzy.imagepicker.ui.ImageGridActivity;
 import com.lzy.imagepicker.view.SuperCheckBox;
@@ -37,13 +37,13 @@ public class ImageGridAdapter extends BaseAdapter {
 
     private ImagePicker imagePicker;
     private Activity mActivity;
-    private ArrayList<ImageItem> images = new ArrayList<>();       //当前需要显示的所有的图片数据
-    private ArrayList<ImageItem> mSelectedImages; //全局保存的已经选中的图片数据
+    private ArrayList<MediaItem> images = new ArrayList<>();       //当前需要显示的所有的图片数据
+    private ArrayList<MediaItem> mSelectedImages; //全局保存的已经选中的图片数据
     private boolean isShowCamera;         //是否显示拍照按钮
     private int mImageSize;               //每个条目的大小
     private OnImageItemClickListener listener;   //图片被点击的监听
 
-    public ImageGridAdapter(Activity activity, ArrayList<ImageItem> images) {
+    public ImageGridAdapter(Activity activity, ArrayList<MediaItem> images) {
         this.mActivity = activity;
         if (images != null) {
             this.images = images;
@@ -52,10 +52,10 @@ public class ImageGridAdapter extends BaseAdapter {
         mImageSize = Utils.getImageItemWidth(mActivity);
         imagePicker = ImagePicker.getInstance();
         isShowCamera = imagePicker.isShowCamera();
-        mSelectedImages = imagePicker.getSelectedImages();
+        mSelectedImages = imagePicker.getSelectedMedias();
     }
 
-    public void refreshData(ArrayList<ImageItem> images) {
+    public void refreshData(ArrayList<MediaItem> images) {
         if (images != null) {
             this.images = images;
             notifyDataSetChanged();
@@ -79,7 +79,7 @@ public class ImageGridAdapter extends BaseAdapter {
     }
 
     @Override
-    public ImageItem getItem(int position) {
+    public MediaItem getItem(int position) {
         if (isShowCamera) {
             if (position == 0) return null;
             return images.get(position - 1);
@@ -120,24 +120,24 @@ public class ImageGridAdapter extends BaseAdapter {
             } else {
                 holder = (ViewHolder) convertView.getTag();
             }
-            final ImageItem imageItem = getItem(position);
+            final MediaItem mediaItem = getItem(position);
 
             holder.ivThumb.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (listener != null) listener.onImageItemClick(holder.rootView, imageItem, position);
+                    if (listener != null) listener.onImageItemClick(holder.rootView, mediaItem, position);
                 }
             });
             holder.cbCheck.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    int selectLimit = imagePicker.getSelectLimit();
+                    int selectLimit = imagePicker.getMediaLimit();
                     if (holder.cbCheck.isChecked() && mSelectedImages.size() >= selectLimit) {
                         Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.select_limit, selectLimit), Toast.LENGTH_SHORT).show();
                         holder.cbCheck.setChecked(false);
                         holder.mask.setVisibility(View.GONE);
                     } else {
-                        imagePicker.addSelectedImageItem(position, imageItem, holder.cbCheck.isChecked());
+                        imagePicker.addSelectedMediaItem(position, mediaItem, holder.cbCheck.isChecked());
                         holder.mask.setVisibility(View.VISIBLE);
                     }
                 }
@@ -145,7 +145,7 @@ public class ImageGridAdapter extends BaseAdapter {
             //根据是否多选，显示或隐藏checkbox
             if (imagePicker.isMultiMode()) {
                 holder.cbCheck.setVisibility(View.VISIBLE);
-                boolean checked = mSelectedImages.contains(imageItem);
+                boolean checked = mSelectedImages.contains(mediaItem);
                 if (checked) {
                     holder.mask.setVisibility(View.VISIBLE);
                     holder.cbCheck.setChecked(true);
@@ -156,7 +156,7 @@ public class ImageGridAdapter extends BaseAdapter {
             } else {
                 holder.cbCheck.setVisibility(View.GONE);
             }
-            imagePicker.getImageLoader().displayImage(mActivity, imageItem.path, holder.ivThumb, mImageSize, mImageSize); //显示图片
+            imagePicker.getImageLoader().displayImage(mActivity, mediaItem.path, holder.ivThumb, mImageSize, mImageSize); //显示图片
         }
         return convertView;
     }
@@ -180,6 +180,6 @@ public class ImageGridAdapter extends BaseAdapter {
     }
 
     public interface OnImageItemClickListener {
-        void onImageItemClick(View view, ImageItem imageItem, int position);
+        void onImageItemClick(View view, MediaItem mediaItem, int position);
     }
 }

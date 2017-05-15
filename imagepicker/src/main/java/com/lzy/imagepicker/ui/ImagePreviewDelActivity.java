@@ -11,6 +11,9 @@ import android.widget.ImageView;
 
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.R;
+import com.lzy.imagepicker.bean.MediaItem;
+
+import java.util.ArrayList;
 
 /**
  * ================================================
@@ -32,13 +35,13 @@ public class ImagePreviewDelActivity extends ImagePreviewBaseActivity implements
         mBtnDel.setVisibility(View.VISIBLE);
         topBar.findViewById(R.id.btn_back).setOnClickListener(this);
 
-        mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mImageItems.size()));
+        mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mMediaItems.size()));
         //滑动ViewPager的时候，根据外界的数据改变当前的选中状态和当前的图片的位置描述文本
         mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
                 mCurrentPosition = position;
-                mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mImageItems.size()));
+                mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mMediaItems.size()));
             }
         });
     }
@@ -53,7 +56,9 @@ public class ImagePreviewDelActivity extends ImagePreviewBaseActivity implements
         }
     }
 
-    /** 是否删除此张图片 */
+    /**
+     * 是否删除此张图片
+     */
     private void showDeleteDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("提示");
@@ -63,11 +68,11 @@ public class ImagePreviewDelActivity extends ImagePreviewBaseActivity implements
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 //移除当前图片刷新界面
-                mImageItems.remove(mCurrentPosition);
-                if (mImageItems.size() > 0) {
-                    mAdapter.setData(mImageItems);
+                mMediaItems.remove(mCurrentPosition);
+                if (mMediaItems.size() > 0) {
+                    mAdapter.setData(mMediaItems);
                     mAdapter.notifyDataSetChanged();
-                    mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mImageItems.size()));
+                    mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mMediaItems.size()));
                 } else {
                     onBackPressed();
                 }
@@ -78,15 +83,25 @@ public class ImagePreviewDelActivity extends ImagePreviewBaseActivity implements
 
     @Override
     public void onBackPressed() {
+        mVideoItems = new ArrayList<>();
+        if (mMediaItems != null && mMediaItems.size() > 0) {
+            for (MediaItem mediaItem : mMediaItems) {
+                if (mediaItem.mimeType.startsWith("video"))
+                    mVideoItems.add(mediaItem);
+            }
+        }
         Intent intent = new Intent();
         //带回最新数据
-        intent.putExtra(ImagePicker.EXTRA_IMAGE_ITEMS, mImageItems);
+        intent.putExtra(ImagePicker.EXTRA_IMAGE_ITEMS, mMediaItems);
+        intent.putExtra(ImagePicker.EXTRA_VIDEO_ITEMS, mVideoItems);
         setResult(ImagePicker.RESULT_CODE_BACK, intent);
         finish();
         super.onBackPressed();
     }
 
-    /** 单击时，隐藏头和尾 */
+    /**
+     * 单击时，隐藏头和尾
+     */
     @Override
     public void onImageSingleTap() {
         if (topBar.getVisibility() == View.VISIBLE) {

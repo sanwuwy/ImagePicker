@@ -11,8 +11,8 @@ import android.widget.TextView;
 
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.R;
+import com.lzy.imagepicker.bean.MediaFolder;
 import com.lzy.imagepicker.util.Utils;
-import com.lzy.imagepicker.bean.ImageFolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,33 +32,33 @@ public class ImageFolderAdapter extends BaseAdapter {
     private Activity mActivity;
     private LayoutInflater mInflater;
     private int mImageSize;
-    private List<ImageFolder> imageFolders;
+    private List<MediaFolder> mediaFolders;
     private int lastSelected = 0;
 
-    public ImageFolderAdapter(Activity activity, List<ImageFolder> folders) {
+    public ImageFolderAdapter(Activity activity, List<MediaFolder> folders) {
         mActivity = activity;
-        if (folders != null && folders.size() > 0) imageFolders = folders;
-        else imageFolders = new ArrayList<>();
+        if (folders != null && folders.size() > 0) mediaFolders = folders;
+        else mediaFolders = new ArrayList<>();
 
         imagePicker = ImagePicker.getInstance();
         mImageSize = Utils.getImageItemWidth(mActivity);
         mInflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
-    public void refreshData(List<ImageFolder> folders) {
-        if (folders != null && folders.size() > 0) imageFolders = folders;
-        else imageFolders.clear();
+    public void refreshData(List<MediaFolder> folders) {
+        if (folders != null && folders.size() > 0) mediaFolders = folders;
+        else mediaFolders.clear();
         notifyDataSetChanged();
     }
 
     @Override
     public int getCount() {
-        return imageFolders.size();
+        return mediaFolders.size();
     }
 
     @Override
-    public ImageFolder getItem(int position) {
-        return imageFolders.get(position);
+    public MediaFolder getItem(int position) {
+        return mediaFolders.get(position);
     }
 
     @Override
@@ -76,7 +76,7 @@ public class ImageFolderAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        ImageFolder folder = getItem(position);
+        MediaFolder folder = getItem(position);
         holder.folderName.setText(folder.name);
         holder.imageCount.setText(mActivity.getString(R.string.folder_image_count, folder.images.size()));
         imagePicker.getImageLoader().displayImage(mActivity, folder.cover.path, holder.cover, mImageSize, mImageSize);

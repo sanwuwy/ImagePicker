@@ -1,14 +1,19 @@
 package com.lzy.imagepicker.adapter;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.support.v4.view.PagerAdapter;
 import android.util.DisplayMetrics;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.lzy.imagepicker.ImagePicker;
+import com.lzy.imagepicker.R;
+import com.lzy.imagepicker.ui.PlayVideoActivity;
 import com.lzy.imagepicker.util.Utils;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 
 import java.util.ArrayList;
 
@@ -29,11 +34,11 @@ public class ImagePageAdapter extends PagerAdapter {
     private int screenWidth;
     private int screenHeight;
     private ImagePicker imagePicker;
-    private ArrayList<ImageItem> images = new ArrayList<>();
+    private ArrayList<MediaItem> images = new ArrayList<>();
     private Activity mActivity;
     public PhotoViewClickListener listener;
 
-    public ImagePageAdapter(Activity activity, ArrayList<ImageItem> images) {
+    public ImagePageAdapter(Activity activity, ArrayList<MediaItem> images) {
         this.mActivity = activity;
         this.images = images;
 
@@ -43,7 +48,7 @@ public class ImagePageAdapter extends PagerAdapter {
         imagePicker = ImagePicker.getInstance();
     }
 
-    public void setData(ArrayList<ImageItem> images) {
+    public void setData(ArrayList<MediaItem> images) {
         this.images = images;
     }
 
@@ -53,17 +58,39 @@ public class ImagePageAdapter extends PagerAdapter {
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
-        PhotoView photoView = new PhotoView(mActivity);
-        ImageItem imageItem = images.get(position);
-        imagePicker.getImageLoader().displayImage(mActivity, imageItem.path, photoView, screenWidth, screenHeight);
+        View view = newView(position);
+        container.addView(view);
+        return view;
+    }
+
+    private View newView(int position) {
+        View view = View.inflate(mActivity, R.layout.view_photo_view, null);
+        PhotoView photoView = (PhotoView) view.findViewById(R.id.photo_view_pv);
+        ImageView imageView = (ImageView) view.findViewById(R.id.play_icon);
+        final MediaItem mediaItem = images.get(position);
+        String mimeType = mediaItem.mimeType;
+        if (mimeType.startsWith("video")) {
+            imageView.setVisibility(View.VISIBLE);
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(mActivity, PlayVideoActivity.class);
+                    intent.putExtra(PlayVideoActivity.TYPE_VIDEO_PATH, mediaItem.path);
+                    intent.putExtra(PlayVideoActivity.TYPE_AUTO_FINISH, true);
+                    mActivity.startActivity(intent);
+                }
+            });
+        } else {
+            imageView.setVisibility(View.GONE);
+        }
+        imagePicker.getImageLoader().displayImage(mActivity, mediaItem.path, photoView, screenWidth, screenHeight);
         photoView.setOnPhotoTapListener(new PhotoViewAttacher.OnPhotoTapListener() {
             @Override
             public void onPhotoTap(View view, float x, float y) {
                 if (listener != null) listener.OnPhotoTapListener(view, x, y);
             }
         });
-        container.addView(photoView);
-        return photoView;
+        return view;
     }
 
     @Override

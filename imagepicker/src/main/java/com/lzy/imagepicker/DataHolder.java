@@ -1,6 +1,6 @@
 package com.lzy.imagepicker;
 
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +18,7 @@ public class DataHolder {
     public static final String DH_CURRENT_IMAGE_FOLDER_ITEMS = "dh_current_image_folder_items";
 
     private static DataHolder mInstance;
-    private Map<String, List<ImageItem>> data;
+    private Map<String, List<MediaItem>> data;
 
     public static DataHolder getInstance() {
         if (mInstance == null){
@@ -35,7 +35,7 @@ public class DataHolder {
         data = new HashMap<>();
     }
 
-    public void save(String id, List<ImageItem> object) {
+    public void save(String id, List<MediaItem> object) {
         if (data != null){
             data.put(id, object);
         }

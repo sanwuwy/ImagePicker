@@ -3,13 +3,14 @@ package com.lzy.imagepickerdemo.wxdemo;
 import android.app.Activity;
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.lzy.imagepicker.ImagePicker;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepickerdemo.R;
 
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ import java.util.List;
 public class ImagePickerAdapter extends RecyclerView.Adapter<ImagePickerAdapter.SelectedPicViewHolder> {
     private int maxImgCount;
     private Context mContext;
-    private List<ImageItem> mData;
+    private List<MediaItem> mData;
     private LayoutInflater mInflater;
     private OnRecyclerViewItemClickListener listener;
     private boolean isAdded;   //是否额外添加了最后一个图片
@@ -40,10 +41,10 @@ public class ImagePickerAdapter extends RecyclerView.Adapter<ImagePickerAdapter.
         this.listener = listener;
     }
 
-    public void setImages(List<ImageItem> data) {
+    public void setImages(List<MediaItem> data) {
         mData = new ArrayList<>(data);
         if (getItemCount() < maxImgCount) {
-            mData.add(new ImageItem());
+            mData.add(new MediaItem());
             isAdded = true;
         } else {
             isAdded = false;
@@ -51,13 +52,13 @@ public class ImagePickerAdapter extends RecyclerView.Adapter<ImagePickerAdapter.
         notifyDataSetChanged();
     }
 
-    public List<ImageItem> getImages() {
+    public List<MediaItem> getImages() {
         //由于图片未选满时，最后一张显示添加图片，因此这个方法返回真正的已选图片
         if (isAdded) return new ArrayList<>(mData.subList(0, mData.size() - 1));
         else return mData;
     }
 
-    public ImagePickerAdapter(Context mContext, List<ImageItem> data, int maxImgCount) {
+    public ImagePickerAdapter(Context mContext, List<MediaItem> data, int maxImgCount) {
         this.mContext = mContext;
         this.maxImgCount = maxImgCount;
         this.mInflater = LayoutInflater.from(mContext);
@@ -82,18 +83,26 @@ public class ImagePickerAdapter extends RecyclerView.Adapter<ImagePickerAdapter.
     public class SelectedPicViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         private ImageView iv_img;
+        private ImageView iv_play_icon;
         private int clickPosition;
 
         public SelectedPicViewHolder(View itemView) {
             super(itemView);
             iv_img = (ImageView) itemView.findViewById(R.id.iv_img);
+            iv_play_icon = (ImageView) itemView.findViewById(R.id.iv_play_icon);
         }
 
         public void bind(int position) {
             //设置条目的点击事件
             itemView.setOnClickListener(this);
             //根据条目位置设置图片
-            ImageItem item = mData.get(position);
+            MediaItem item = mData.get(position);
+            String mimeType = item.mimeType;
+            if (!TextUtils.isEmpty(mimeType) && mimeType.startsWith("video")) {
+                iv_play_icon.setVisibility(View.VISIBLE);
+            } else {
+                iv_play_icon.setVisibility(View.GONE);
+            }
             if (isAdded && position == getItemCount() - 1) {
                 iv_img.setImageResource(R.drawable.selector_image_add);
                 clickPosition = WxDemoActivity.IMAGE_ITEM_ADD;

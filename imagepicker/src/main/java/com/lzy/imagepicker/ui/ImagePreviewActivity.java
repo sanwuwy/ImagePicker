@@ -1,6 +1,7 @@
 package com.lzy.imagepicker.ui;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
 import android.text.format.Formatter;
@@ -8,12 +9,15 @@ import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.R;
-import com.lzy.imagepicker.bean.ImageItem;
+import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepicker.view.SuperCheckBox;
+
+import java.io.File;
 
 /**
  * ================================================
@@ -33,6 +37,7 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
     private SuperCheckBox mCbOrigin;               //原图
     private Button mBtnOk;                         //确认图片的选择
     private View bottomBar;
+    private ImageView playIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,32 +61,62 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
 
         //初始化当前页面的状态
         onImageSelected(0, null, false);
-        ImageItem item = mImageItems.get(mCurrentPosition);
-        boolean isSelected = imagePicker.isSelect(item);
-        mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mImageItems.size()));
+        MediaItem item = mMediaItems.get(mCurrentPosition);
+        String mimeType = item.mimeType;
+        if (mimeType.startsWith("video")) {
+            playIcon = (ImageView) findViewById(R.id.play_icon);
+            playIcon.setVisibility(View.VISIBLE);
+            playIcon.setOnClickListener(this);
+        }
+        boolean isSelected = imagePicker.isSelectMedia(item);
+        mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mMediaItems.size()));
         mCbCheck.setChecked(isSelected);
         //滑动ViewPager的时候，根据外界的数据改变当前的选中状态和当前的图片的位置描述文本
         mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
                 mCurrentPosition = position;
-                ImageItem item = mImageItems.get(mCurrentPosition);
-                boolean isSelected = imagePicker.isSelect(item);
+                MediaItem item = mMediaItems.get(mCurrentPosition);
+                String mimeType = item.mimeType;
+                if (mimeType.startsWith("video")) {
+                    playIcon.setVisibility(View.VISIBLE);
+                } else {
+                    playIcon.setVisibility(View.GONE);
+                }
+                boolean isSelected = imagePicker.isSelectMedia(item);
                 mCbCheck.setChecked(isSelected);
-                mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mImageItems.size()));
+                mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mMediaItems.size()));
+
             }
         });
         //当点击当前选中按钮的时候，需要根据当前的选中状态添加和移除图片
         mCbCheck.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ImageItem imageItem = mImageItems.get(mCurrentPosition);
-                int selectLimit = imagePicker.getSelectLimit();
-                if (mCbCheck.isChecked() && selectedImages.size() >= selectLimit) {
-                    Toast.makeText(ImagePreviewActivity.this, ImagePreviewActivity.this.getString(R.string.select_limit, selectLimit), Toast.LENGTH_SHORT).show();
-                    mCbCheck.setChecked(false);
+                MediaItem mediaItem = mMediaItems.get(mCurrentPosition);
+                int selectLimit = imagePicker.getMediaLimit();
+                int videoLimit = imagePicker.getVideoLimit();
+                String mimeType = mediaItem.mimeType;
+                if (mimeType.startsWith("video")) {
+                    if (mCbCheck.isChecked() && selectedVideos.size() >= videoLimit) {
+                        Toast.makeText(ImagePreviewActivity.this, ImagePreviewActivity.this.getString(R.string.video_limit, videoLimit), Toast.LENGTH_SHORT).show();
+                        mCbCheck.setChecked(false);
+                    } else {
+                        if (mCbCheck.isChecked() && selectedImages.size() >= selectLimit) {
+                            Toast.makeText(ImagePreviewActivity.this, ImagePreviewActivity.this.getString(R.string.select_limit, selectLimit), Toast.LENGTH_SHORT).show();
+                            mCbCheck.setChecked(false);
+                        } else {
+                            imagePicker.addSelectedMediaItem(mCurrentPosition, mediaItem, mCbCheck.isChecked());
+                            imagePicker.addSelectedVideoItem(mCurrentPosition, mediaItem, mCbCheck.isChecked());
+                        }
+                    }
                 } else {
-                    imagePicker.addSelectedImageItem(mCurrentPosition, imageItem, mCbCheck.isChecked());
+                    if (mCbCheck.isChecked() && selectedImages.size() >= selectLimit) {
+                        Toast.makeText(ImagePreviewActivity.this, ImagePreviewActivity.this.getString(R.string.select_limit, selectLimit), Toast.LENGTH_SHORT).show();
+                        mCbCheck.setChecked(false);
+                    } else {
+                        imagePicker.addSelectedMediaItem(mCurrentPosition, mediaItem, mCbCheck.isChecked());
+                    }
                 }
             }
         });
@@ -89,12 +124,12 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
 
     /**
      * 图片添加成功后，修改当前图片的选中数量
-     * 当调用 addSelectedImageItem 或 deleteSelectedImageItem 都会触发当前回调
+     * 当调用 addSelectedMediaItem 或 deleteSelectedImageItem 都会触发当前回调
      */
     @Override
-    public void onImageSelected(int position, ImageItem item, boolean isAdd) {
-        if (imagePicker.getSelectImageCount() > 0) {
-            mBtnOk.setText(getString(R.string.select_complete, imagePicker.getSelectImageCount(), imagePicker.getSelectLimit()));
+    public void onImageSelected(int position, MediaItem item, boolean isAdd) {
+        if (imagePicker.getSelectMediaCount() > 0) {
+            mBtnOk.setText(getString(R.string.select_complete, imagePicker.getSelectMediaCount(), imagePicker.getMediaLimit()));
             mBtnOk.setEnabled(true);
         } else {
             mBtnOk.setText(getString(R.string.complete));
@@ -103,8 +138,8 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
 
         if (mCbOrigin.isChecked()) {
             long size = 0;
-            for (ImageItem imageItem : selectedImages)
-                size += imageItem.size;
+            for (MediaItem mediaItem : selectedImages)
+                size += mediaItem.size;
             String fileSize = Formatter.formatFileSize(this, size);
             mCbOrigin.setText(getString(R.string.origin_size, fileSize));
         }
@@ -115,7 +150,7 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
         int id = v.getId();
         if (id == R.id.btn_ok) {
             Intent intent = new Intent();
-            intent.putExtra(ImagePicker.EXTRA_RESULT_ITEMS, imagePicker.getSelectedImages());
+            intent.putExtra(ImagePicker.EXTRA_RESULT_ITEMS, imagePicker.getSelectedMedias());
             setResult(ImagePicker.RESULT_CODE_ITEMS, intent);
             finish();
         } else if (id == R.id.btn_back) {
@@ -123,6 +158,11 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
             intent.putExtra(ImagePreviewActivity.ISORIGIN, isOrigin);
             setResult(ImagePicker.RESULT_CODE_BACK, intent);
             finish();
+        } else if (id == R.id.play_icon) {
+            Intent intent = new Intent(this, PlayVideoActivity.class);
+            MediaItem item = mMediaItems.get(mCurrentPosition);
+            intent.putExtra(PlayVideoActivity.TYPE_VIDEO_PATH, item.path);
+            startActivity(intent);
         }
     }
 
@@ -141,7 +181,7 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
         if (id == R.id.cb_origin) {
             if (isChecked) {
                 long size = 0;
-                for (ImageItem item : selectedImages)
+                for (MediaItem item : selectedImages)
                     size += item.size;
                 String fileSize = Formatter.formatFileSize(this, size);
                 isOrigin = true;
