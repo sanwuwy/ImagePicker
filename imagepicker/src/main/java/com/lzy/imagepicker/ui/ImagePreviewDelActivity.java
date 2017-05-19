@@ -86,7 +86,8 @@ public class ImagePreviewDelActivity extends ImagePreviewBaseActivity implements
         mVideoItems = new ArrayList<>();
         if (mMediaItems != null && mMediaItems.size() > 0) {
             for (MediaItem mediaItem : mMediaItems) {
-                if (mediaItem.mimeType.startsWith("video"))
+                String mimeType = mediaItem.mimeType;
+                if (mimeType != null && mimeType.startsWith("video"))
                     mVideoItems.add(mediaItem);
             }
         }

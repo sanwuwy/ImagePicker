@@ -5,7 +5,7 @@ android {
     buildToolsVersion "25.0.2"
 
     defaultConfig {
-        minSdkVersion 11
+        minSdkVersion 14
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
@@ -23,6 +23,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.1.1'
     compile 'com.github.chrisbanes.photoview:library:1.2.4'
     compile 'com.android.support:recyclerview-v7:25.1.1'
+    compile project(':lib_Camera')
 }
 
 //apply from: '../bintray.gradle'

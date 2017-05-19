@@ -69,7 +69,7 @@ public class ImagePageAdapter extends PagerAdapter {
         ImageView imageView = (ImageView) view.findViewById(R.id.play_icon);
         final MediaItem mediaItem = images.get(position);
         String mimeType = mediaItem.mimeType;
-        if (mimeType.startsWith("video")) {
+        if (mimeType != null && mimeType.startsWith("video")) {
             imageView.setVisibility(View.VISIBLE);
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
