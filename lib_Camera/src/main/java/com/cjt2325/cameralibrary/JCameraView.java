@@ -7,6 +7,8 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -24,7 +26,6 @@ import com.cjt2325.cameralibrary.lisenter.CaptureLisenter;
 import com.cjt2325.cameralibrary.lisenter.JCameraLisenter;
 import com.cjt2325.cameralibrary.lisenter.ReturnLisenter;
 import com.cjt2325.cameralibrary.lisenter.TypeLisenter;
-import com.cjt2325.cameralibrary.util.AudioUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +34,7 @@ import java.io.IOException;
 /**
  * =====================================
  * 作    者: 陈嘉桐
- * 版    本：1.1.4
+ * 版    本：1.0.4
  * 创建日期：2017/4/25
  * 描    述：
  * =====================================
@@ -43,6 +44,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
 
     private static final int TYPE_PICTURE = 0x001;
     private static final int TYPE_VIDEO = 0x002;
+    public static final String TYPE_CAPTURE = "type_capture";
 
     private JCameraLisenter jCameraLisenter;
 
@@ -72,6 +74,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
 
     private boolean stopping = false;
     private boolean isBorrow = false;
+    private boolean takePictureing = false;
 
     /**
      * switch buttom param
@@ -101,9 +104,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
     public JCameraView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         mContext = context;
-        /**
-         * get AttributeSet
-         */
+        //get AttributeSet
         TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.JCameraView, defStyleAttr, 0);
         iconSize = a.getDimensionPixelSize(R.styleable.JCameraView_iconSize, (int) TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP, 35, getResources().getDisplayMetrics()));
@@ -122,8 +123,6 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
         manager.getDefaultDisplay().getMetrics(outMetrics);
         layout_width = outMetrics.widthPixels;
         fouce_size = layout_width / 4;
-
-
         CAMERA_STATE = STATE_IDLE;
     }
 
@@ -131,18 +130,13 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
     private void initView() {
         setWillNotDraw(false);
         this.setBackgroundColor(0xff000000);
-        /**
-         * VideoView
-         */
+        //VideoView
         mVideoView = new VideoView(mContext);
-        LayoutParams videoViewParam = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        LayoutParams videoViewParam = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
         videoViewParam.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
         mVideoView.setLayoutParams(videoViewParam);
-//        mVideoView.setBackgroundColor(0xff000000);
 
-        /**
-         * mPhoto
-         */
+        //mPhoto
         mPhoto = new ImageView(mContext);
         LayoutParams photoParam = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams
                 .MATCH_PARENT);
@@ -150,9 +144,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
         mPhoto.setLayoutParams(photoParam);
         mPhoto.setBackgroundColor(0xff000000);
         mPhoto.setVisibility(INVISIBLE);
-        /**
-         * switchCamera
-         */
+        //switchCamera
         mSwitchCamera = new ImageView(mContext);
         LayoutParams imageViewParam = new LayoutParams(iconSize, iconSize);
         imageViewParam.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, RelativeLayout.TRUE);
@@ -165,7 +157,6 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                 if (isBorrow) {
                     return;
                 }
-                Log.i("CJT", String.valueOf(isBorrow));
                 new Thread() {
                     /**
                      * switch camera
@@ -178,9 +169,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
             }
         });
 
-        /**
-         * CaptureLayout
-         */
+        //CaptureLayout
         mCaptureLayout = new CaptureLayout(mContext);
         LayoutParams layout_param = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         layout_param.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -188,32 +177,30 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
         mCaptureLayout.setLayoutParams(layout_param);
         mCaptureLayout.setDuration(duration);
 
-        /**
-         * mFoucsView
-         */
+        //mFoucsView
+
         mFoucsView = new FoucsView(mContext, fouce_size);
         LayoutParams foucs_param = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         mFoucsView.setLayoutParams(foucs_param);
         mFoucsView.setVisibility(INVISIBLE);
 
-        /**
-         * add view to ParentLayout
-         */
+        //add view to ParentLayout
+
         this.addView(mVideoView);
         this.addView(mPhoto);
         this.addView(mSwitchCamera);
         this.addView(mCaptureLayout);
         this.addView(mFoucsView);
-        /**
-         * START >>>>>>> captureLayout lisenter callback
-         */
+        //START >>>>>>> captureLayout lisenter callback
         mCaptureLayout.setCaptureLisenter(new CaptureLisenter() {
             @Override
             public void takePictures() {
-                if (CAMERA_STATE != STATE_IDLE) {
+                if (CAMERA_STATE != STATE_IDLE || takePictureing) {
                     return;
                 }
                 CAMERA_STATE = STATE_RUNNING;
+                takePictureing = true;
+                mFoucsView.setVisibility(INVISIBLE);
                 CameraInterface.getInstance().takePicture(new CameraInterface.TakePictureCallback() {
                     @Override
                     public void captureResult(Bitmap bitmap) {
@@ -224,6 +211,10 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                         CAMERA_STATE = STATE_WAIT;
                         mPhoto.setImageBitmap(bitmap);
                         mPhoto.setVisibility(VISIBLE);
+                        mCaptureLayout.startAlphaAnimation();
+                        mCaptureLayout.startTypeBtnAnimator();
+                        takePictureing = false;
+                        mSwitchCamera.setVisibility(INVISIBLE);
                     }
                 });
             }
@@ -234,7 +225,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                     return;
                 }
                 stopping = true;
-                Log.i(TAG, "time = " + time);
+//                Log.i(TAG, "time = " + time);
                 mCaptureLayout.setTextWithAnimation();
                 postDelayed(new Runnable() {
                     @Override
@@ -260,6 +251,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                 }
                 isBorrow = true;
                 CAMERA_STATE = STATE_RUNNING;
+                mFoucsView.setVisibility(INVISIBLE);
                 CameraInterface.getInstance().startRecord(mVideoView.getHolder().getSurface());
             }
 
@@ -272,6 +264,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                         videoUrl = url;
                         type = TYPE_VIDEO;
                         new Thread(new Runnable() {
+                            @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
                             @Override
                             public void run() {
                                 try {
@@ -292,13 +285,6 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                                         onVideoSizeChanged(MediaPlayer mp, int width, int height) {
                                             updateVideoViewSize(mMediaPlayer.getVideoWidth(), mMediaPlayer
                                                     .getVideoHeight());
-//                                            mVideoWidth = mMediaPlayer.getVideoWidth();
-//                                            mVideoHeight = mMediaPlayer.getVideoHeight();
-
-
-                                            Log.i("CJT", "video = " + mMediaPlayer.getVideoWidth() + " + " +
-                                                    mMediaPlayer.getVideoHeight());
-                                            Log.i("CJT", "surface = " + width + " + " + height);
                                         }
                                     });
                                     mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
@@ -320,7 +306,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
 
             @Override
             public void recordZoom(float zoom) {
-                CameraInterface.getInstance().setZoom(zoom);
+                CameraInterface.getInstance().setZoom(zoom, CameraInterface.TYPE_RECORDER);
             }
         });
         mCaptureLayout.setTypeLisenter(new TypeLisenter() {
@@ -353,15 +339,12 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
         mCaptureLayout.setReturnLisenter(new ReturnLisenter() {
             @Override
             public void onReturn() {
-                if (jCameraLisenter != null) {
+                if (jCameraLisenter != null && !takePictureing) {
                     jCameraLisenter.quit();
                 }
             }
         });
-        /**
-         * END >>>>>>> captureLayout lisenter callback
-         */
-//        mTextureView.setSurfaceTextureListener(this);
+        //END >>>>>>> captureLayout lisenter callback
         mVideoView.getHolder().addCallback(this);
     }
 
@@ -388,9 +371,18 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                 @Override
                 public void run() {
                     CameraInterface.getInstance().doOpenCamera(JCameraView.this);
+                    CameraInterface.getInstance().setSwitchView(mSwitchCamera);
                 }
             }.start();
         }
+    }
+
+    /**
+     * 设置是否只拍照不摄像
+     * @param justPicture
+     */
+    public void setJustPicture(boolean justPicture) {
+        mCaptureLayout.setJustPicture(justPicture);
     }
 
 //    @Override
@@ -409,6 +401,10 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
         CameraInterface.getInstance().doStopCamera();
     }
 
+    private boolean firstTouch = true;
+    private float firstTouchLength = 0;
+    private int zoomScale = 0;
+
     /**
      * handler touch focus
      */
@@ -417,11 +413,47 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 if (event.getPointerCount() == 1) {
+                    //显示对焦指示器
                     setFocusViewWidthAnimation(event.getX(), event.getY());
                 }
+                if (event.getPointerCount() == 2) {
+                    Log.i("CJT", "ACTION_DOWN = " + 2);
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (event.getPointerCount() == 1) {
+                    firstTouch = true;
+                }
+                if (event.getPointerCount() == 2) {
+                    //第一个点
+                    float point_1_X = event.getX(0);
+                    float point_1_Y = event.getY(0);
+                    //第二个点
+                    float point_2_X = event.getX(1);
+                    float point_2_Y = event.getY(1);
+
+                    float result = (float) Math.sqrt(Math.pow(point_1_X - point_2_X, 2) + Math.pow(point_1_Y - point_2_Y, 2));
+
+                    if (firstTouch) {
+                        firstTouchLength = result;
+                        firstTouch = false;
+                    }
+
+                    if ((int) (result - firstTouchLength) / 50 != 0) {
+                        firstTouch = true;
+                        CameraInterface.getInstance().setZoom(result - firstTouchLength, CameraInterface.TYPE_CAPTURE);
+                    }
+
+
+                    Log.i("CJT", "result = " + (result - firstTouchLength));
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                firstTouch = true;
                 break;
         }
-        return super.onTouchEvent(event);
+//        return super.onTouchEvent(event);
+        return true;
     }
 
     /**
@@ -470,7 +502,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
         this.jCameraLisenter = jCameraLisenter;
     }
 
-
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void handlerPictureOrVideo(int type, boolean confirm) {
         if (jCameraLisenter == null || type == -1) {
             return;
@@ -481,17 +513,18 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                 if (confirm && captureBitmap != null) {
                     jCameraLisenter.captureSuccess(captureBitmap);
                 } else {
-                    captureBitmap.recycle();
+                    if (captureBitmap != null) {
+                        captureBitmap.recycle();
+                    }
                     captureBitmap = null;
                 }
                 break;
             case TYPE_VIDEO:
                 if (confirm) {
+                    //回调录像成功后的URL
                     jCameraLisenter.recordSuccess(videoUrl);
                 } else {
-                    /**
-                     * delete video file
-                     */
+                    //删除视频
                     File file = new File(videoUrl);
                     if (file.exists()) {
                         file.delete();
@@ -505,6 +538,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
                 break;
         }
         isBorrow = false;
+        mSwitchCamera.setVisibility(VISIBLE);
         CAMERA_STATE = STATE_IDLE;
     }
 
@@ -515,7 +549,6 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
     /**
      * TextureView resize
      */
-
     public void updateVideoViewSize(float videoWidth, float videoHeight) {
         if (videoWidth > videoHeight) {
             LayoutParams videoViewParam;
@@ -528,15 +561,16 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
         }
     }
 
-
-    public void forbiddenAudio(boolean forbidden) {
-        if (forbidden) {
-            AudioUtil.setAudioManage(mContext);
-        }
+    /**
+     * forbidden audio
+     */
+    public void enableshutterSound(boolean enable) {
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        Log.i("CJT", "surfaceCreated");
+        CameraInterface.getInstance().doStartPreview(holder, screenProp);
     }
 
     @Override
@@ -545,5 +579,7 @@ public class JCameraView extends RelativeLayout implements CameraInterface.CamOp
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.i("CJT", "surfaceDestroyed");
+        CameraInterface.getInstance().doDestroyCamera();
     }
 }

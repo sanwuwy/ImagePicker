@@ -15,6 +15,7 @@ import android.support.v4.content.FileProvider;
 import android.util.Log;
 
 import com.cjt2325.cameralibrary.CaptureActivity;
+import com.cjt2325.cameralibrary.JCameraView;
 import com.lzy.imagepicker.bean.MediaFolder;
 import com.lzy.imagepicker.bean.MediaItem;
 import com.lzy.imagepicker.loader.ImageLoader;
@@ -293,10 +294,11 @@ public class ImagePicker {
     /**
      * 拍照的方法
      */
-    public void takePicture(Activity activity, int requestCode) {
+    public void takePicture(Activity activity, int requestCode, boolean justPicture) {
         Intent takePictureIntent = new Intent(activity, CaptureActivity.class);
         takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        activity.startActivity(takePictureIntent);
+        takePictureIntent.putExtra(JCameraView.TYPE_CAPTURE, justPicture);
+        activity.startActivityForResult(takePictureIntent, requestCode);
 //        if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
 //            if (Utils.existSDCard())
 //                takeImageFile = new File(Environment.getExternalStorageDirectory(), "/DCIM/camera/");

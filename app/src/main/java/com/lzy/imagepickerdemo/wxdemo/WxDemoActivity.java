@@ -8,6 +8,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.AdapterView;
 
+import com.cjt2325.cameralibrary.JCameraView;
 import com.lzy.imagepicker.ImageDataSource;
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.bean.MediaItem;
@@ -37,10 +38,10 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
     public static final int REQUEST_CODE_PREVIEW = 101;
 
     private ImagePickerAdapter adapter;
-    private ArrayList<MediaItem> selImageList; //当前选择的所有图片
+    private ArrayList<MediaItem> mSelectImageList; //当前选择的所有图片
     private ArrayList<MediaItem> mSelectVideoList; //当前选择的所有视频文件
-    private int maxImgCount = 4;               //允许选择媒体文件最大数
-    private int maxVideoCount = 2;             //允许选择的视频文件最大数
+    private int maxImgCount = 3;               //允许选择媒体文件最大数
+    private int maxVideoCount = 1;             //允许选择的视频文件最大数
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,9 +70,9 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
 
     private void initWidget() {
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
-        selImageList = new ArrayList<>();
+        mSelectImageList = new ArrayList<>();
         mSelectVideoList = new ArrayList<>();
-        adapter = new ImagePickerAdapter(this, selImageList, maxImgCount);
+        adapter = new ImagePickerAdapter(this, mSelectImageList, maxImgCount);
         adapter.setOnItemClickListener(this);
 
         recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
@@ -99,41 +100,34 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
                 showDialog(new SelectDialog.SelectDialogListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        switch (position) {
-                            case 0: // 直接调起相机
-                                /**
-                                 * 0.4.7 目前直接调起相机不支持裁剪，如果开启裁剪后不会返回图片，请注意，后续版本会解决
-                                 *
-                                 * 但是当前直接依赖的版本已经解决，考虑到版本改动很少，所以这次没有上传到远程仓库
-                                 *
-                                 * 如果实在有所需要，请直接下载源码引用。
-                                 */
-                                //打开选择,本次允许选择的数量
-                                Intent intent = new Intent(WxDemoActivity.this, ImageGridActivity.class);
-                                intent.putExtra(ImageGridActivity.EXTRAS_TAKE_PICKERS, true); // 是否是直接打开相机
-                                startActivityForResult(intent, REQUEST_CODE_SELECT);
-                                break;
-                            case 1:
-                                //打开选择,本次允许选择的数量
-                                int videoCount = maxVideoCount - mSelectVideoList.size();
-                                ImagePicker.getInstance().setVideoLimit(videoCount);
-//                                ImagePicker.getInstance().setMediaLimit(maxImgCount - selImageList.size());
-                                Intent intent1 = new Intent(WxDemoActivity.this, ImageGridActivity.class);
-                                if (videoCount <= 0) {
-                                    intent1.putExtra(ImageGridActivity.EXTRAS_LOAD_TYPE, ImageDataSource.LOADER_ALL_IMAGE);
-                                } else {
-                                    intent1.putExtra(ImageGridActivity.EXTRAS_LOAD_TYPE, ImageDataSource.LOADER_ALL);
-                                }
-                                /* 如果需要进入选择的时候显示已经选中的图片，
-                                 * 详情请查看ImagePickerActivity
-                                 * */
-                                intent1.putExtra(ImageGridActivity.EXTRAS_IMAGES, selImageList);
-                                startActivityForResult(intent1, REQUEST_CODE_SELECT);
-                                break;
-                            default:
-                                break;
+                        //打开选择,本次允许选择的数量
+                        int videoCount = maxVideoCount - mSelectVideoList.size();
+                        ImagePicker.getInstance().setVideoLimit(videoCount);
+                        ImagePicker.getInstance().setMediaLimit(maxImgCount - mSelectImageList.size());
+                        Intent intent = new Intent(WxDemoActivity.this, ImageGridActivity.class);
+                        if (videoCount <= 0) {
+                            intent.putExtra(ImageGridActivity.EXTRAS_LOAD_TYPE, ImageDataSource.LOADER_ALL_IMAGE);
+                            intent.putExtra(JCameraView.TYPE_CAPTURE, true);
+                        } else {
+                            intent.putExtra(ImageGridActivity.EXTRAS_LOAD_TYPE, ImageDataSource.LOADER_ALL);
                         }
-
+                        /* 如果需要进入选择的时候显示已经选中的图片，
+                         * 详情请查看ImagePickerActivity
+                         * */
+//                        intent.putExtra(ImageGridActivity.EXTRAS_IMAGES, mSelectImageList);
+//                        intent.putExtra(ImageGridActivity.EXTRAS_VIDEOS, mSelectVideoList);
+                        if (position == 0) { // 直接调起相机
+                            /**
+                             * 0.4.7 目前直接调起相机不支持裁剪，如果开启裁剪后不会返回图片，请注意，后续版本会解决
+                             *
+                             * 但是当前直接依赖的版本已经解决，考虑到版本改动很少，所以这次没有上传到远程仓库
+                             *
+                             * 如果实在有所需要，请直接下载源码引用。
+                             */
+                            //打开选择,本次允许选择的数量
+                            intent.putExtra(ImageGridActivity.EXTRAS_TAKE_PICKERS, true); // 是否是直接打开相机
+                        }
+                        startActivityForResult(intent, REQUEST_CODE_SELECT);
                     }
                 }, names);
 
@@ -160,11 +154,11 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
             if (data != null && requestCode == REQUEST_CODE_SELECT) {
                 images = (ArrayList<MediaItem>) data.getSerializableExtra(ImagePicker.EXTRA_RESULT_ITEMS);
                 ArrayList<MediaItem> videos = (ArrayList<MediaItem>) data.getSerializableExtra(ImagePicker.EXTRA_RESULT_VIDEOS);
-                selImageList.clear();
-                mSelectVideoList.clear();
+//                mSelectImageList.clear();
+//                mSelectVideoList.clear();
                 if (images != null) {
-                    selImageList.addAll(images);
-                    adapter.setImages(selImageList);
+                    mSelectImageList.addAll(images);
+                    adapter.setImages(mSelectImageList);
                 }
                 if (videos != null) {
                     mSelectVideoList.addAll(videos);
@@ -175,11 +169,11 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
             if (data != null && requestCode == REQUEST_CODE_PREVIEW) {
                 images = (ArrayList<MediaItem>) data.getSerializableExtra(ImagePicker.EXTRA_IMAGE_ITEMS);
                 ArrayList<MediaItem> videos = (ArrayList<MediaItem>) data.getSerializableExtra(ImagePicker.EXTRA_VIDEO_ITEMS);
-                selImageList.clear();
+                mSelectImageList.clear();
                 mSelectVideoList.clear();
                 if (images != null) {
-                    selImageList.addAll(images);
-                    adapter.setImages(selImageList);
+                    mSelectImageList.addAll(images);
+                    adapter.setImages(mSelectImageList);
                 }
                 if (videos != null) {
                     mSelectVideoList.addAll(videos);

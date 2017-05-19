@@ -4,7 +4,7 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              tools:context="com.cjt2325.cameralibrary.CaptureActivity">
+              tools:context=".CaptureActivity">
 
 
     <com.cjt2325.cameralibrary.JCameraView

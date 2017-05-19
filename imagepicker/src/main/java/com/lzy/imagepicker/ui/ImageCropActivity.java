@@ -113,6 +113,10 @@ public class ImageCropActivity extends ImageBaseActivity implements View.OnClick
         mMediaItems.remove(0);
         MediaItem mediaItem = new MediaItem();
         mediaItem.path = file.getAbsolutePath();
+        mediaItem.mimeType = "image/jpeg";
+        mediaItem.size = file.length();
+        mediaItem.addTime = file.lastModified();
+        mediaItem.name = file.getName();
         mMediaItems.add(mediaItem);
 
         Intent intent = new Intent();

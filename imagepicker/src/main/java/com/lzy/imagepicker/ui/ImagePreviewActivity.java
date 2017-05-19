@@ -62,9 +62,9 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
         //初始化当前页面的状态
         onImageSelected(0, null, false);
         MediaItem item = mMediaItems.get(mCurrentPosition);
+        playIcon = (ImageView) findViewById(R.id.play_icon);
         String mimeType = item.mimeType;
-        if (mimeType.startsWith("video")) {
-            playIcon = (ImageView) findViewById(R.id.play_icon);
+        if (mimeType != null && mimeType.startsWith("video")) {
             playIcon.setVisibility(View.VISIBLE);
             playIcon.setOnClickListener(this);
         }
@@ -73,12 +73,19 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
         mCbCheck.setChecked(isSelected);
         //滑动ViewPager的时候，根据外界的数据改变当前的选中状态和当前的图片的位置描述文本
         mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+                playIcon.setVisibility(View.INVISIBLE);
+            }
+
             @Override
             public void onPageSelected(int position) {
                 mCurrentPosition = position;
                 MediaItem item = mMediaItems.get(mCurrentPosition);
                 String mimeType = item.mimeType;
-                if (mimeType.startsWith("video")) {
+                if (mimeType != null && mimeType.startsWith("video")) {
                     playIcon.setVisibility(View.VISIBLE);
                 } else {
                     playIcon.setVisibility(View.GONE);
