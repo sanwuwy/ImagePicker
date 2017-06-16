@@ -35,7 +35,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="5dp"
         android:layout_marginLeft="10dp"
-        android:src="@drawable/video_icon"
+        android:src="@drawable/video_duration_icon"
         android:visibility="gone" />
 
     <TextView

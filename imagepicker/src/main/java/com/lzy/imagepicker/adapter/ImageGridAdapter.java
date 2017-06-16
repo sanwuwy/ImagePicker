@@ -11,6 +11,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.cjt2325.cameralibrary.JCameraView;
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.R;
 import com.lzy.imagepicker.util.Utils;
@@ -106,7 +107,7 @@ public class ImageGridAdapter extends BaseAdapter {
                     if (!((ImageBaseActivity) mActivity).checkPermission(Manifest.permission.CAMERA)) {
                         ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.CAMERA}, ImageGridActivity.REQUEST_PERMISSION_CAMERA);
                     } else {
-                        imagePicker.takePicture(mActivity, ImagePicker.REQUEST_CODE_TAKE, false);
+                        imagePicker.takePicture(mActivity, ImagePicker.REQUEST_CODE_TAKE, JCameraView.BUTTON_STATE_BOTH);
                     }
                 }
             });

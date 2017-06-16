@@ -12,6 +12,11 @@ import android.view.View;
 import android.view.animation.LinearInterpolator;
 
 import com.cjt2325.cameralibrary.lisenter.CaptureLisenter;
+import com.cjt2325.cameralibrary.util.CheckPermission;
+
+import static com.cjt2325.cameralibrary.JCameraView.BUTTON_STATE_BOTH;
+import static com.cjt2325.cameralibrary.JCameraView.BUTTON_STATE_ONLY_CAPTURE;
+import static com.cjt2325.cameralibrary.JCameraView.BUTTON_STATE_ONLY_RECORDER;
 
 
 /**
@@ -23,7 +28,11 @@ import com.cjt2325.cameralibrary.lisenter.CaptureLisenter;
  * =====================================
  */
 public class CaptureButton extends View {
-//    private static final String TAG = "CJT";
+    //    private static final String TAG = "CJT";
+
+
+    //按钮可执行的功能状态
+    private int button_state;
 
     //空状态
     public static final int STATE_NULL = 0x000;
@@ -73,12 +82,11 @@ public class CaptureButton extends View {
     private RectF rectF;
     //录制视频最大时间长度
     private int duration;
-    //是否只拍照而不摄像
-    private boolean justPicture;
-
 
     //按钮回调接口
     private CaptureLisenter captureLisenter;
+
+//    private boolean hasWindowFocus = true;
 
     public CaptureButton(Context context) {
         super(context);
@@ -107,6 +115,8 @@ public class CaptureButton extends View {
         recordRunnable = new RecordRunnable();
         //set default state;
         this.state = STATE_NULL;
+
+        this.button_state = BUTTON_STATE_BOTH;
 
         //set max record duration,default 10*1000
         duration = 10 * 1000;
@@ -148,10 +158,6 @@ public class CaptureButton extends View {
         }
     }
 
-    public void setJustPicture(boolean justPicture) {
-        this.justPicture = justPicture;
-    }
-
     //Touch_Event_Down时候记录的Y值
     float event_Y;
 
@@ -160,17 +166,26 @@ public class CaptureButton extends View {
         switch (event.getAction()) {
             //
             case MotionEvent.ACTION_DOWN:
+                if (event.getPointerCount() > 1) {
+                    break;
+                }
                 //记录Y值
                 event_Y = event.getY();
                 //修改当前状态为点击按下
                 state = STATE_PRESS_CLICK;
-                if (!justPicture) {
+                //当前状态能否录制
+                //判断按钮状态是否为可录制状态
+                if (!isRecorder &&
+                        (button_state == BUTTON_STATE_ONLY_RECORDER ||
+                                button_state == BUTTON_STATE_BOTH)) {
                     //同时延长500启动长按后处理的逻辑Runnable
                     postDelayed(longPressRunnable, 500);
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (captureLisenter != null) {
+                if (captureLisenter != null
+                        && state == STATE_PRESS_LONG_CLICK
+                        && (button_state == BUTTON_STATE_ONLY_RECORDER || button_state == BUTTON_STATE_BOTH)) {
                     //记录当前Y值与按下时候Y值的差值，调用缩放回调接口
                     captureLisenter.recordZoom(event_Y - event.getY());
                 }
@@ -185,15 +200,14 @@ public class CaptureButton extends View {
 
     //当手指松开按钮时候处理的逻辑
     private void handlerUnpressByState() {
-        if (!justPicture) {
-            //移除长按逻辑的Runnable
-            removeCallbacks(longPressRunnable);
-        }
+        //移除长按逻辑的Runnable
+        removeCallbacks(longPressRunnable);
         //根据当前状态处理
         switch (state) {
             //当前是点击按下
             case STATE_PRESS_CLICK:
-                if (captureLisenter != null) {
+                if (captureLisenter != null &&
+                        (button_state == BUTTON_STATE_ONLY_CAPTURE || button_state == BUTTON_STATE_BOTH)) {
                     //回调拍照接口
                     captureLisenter.takePictures();
                 }
@@ -211,6 +225,15 @@ public class CaptureButton extends View {
         this.state = STATE_NULL;
     }
 
+    private boolean isRecorder = false;
+
+    /**
+     * 当前能否录视频
+     */
+    public void isRecord(boolean record) {
+        isRecorder = record;
+    }
+
     /**
      * LongPressRunnable
      */
@@ -220,8 +243,19 @@ public class CaptureButton extends View {
             //如果按下后经过500毫秒则会修改当前状态为长按状态
             state = STATE_PRESS_LONG_CLICK;
             //启动按钮动画，外圆变大，内圆缩小
-            startAnimation(button_outside_radius, button_outside_radius + outside_add_size, button_inside_radius,
-                    button_inside_radius - inside_reduce_size);
+            if (CheckPermission.getRecordState() != CheckPermission.STATE_SUCCESS) {
+                if (captureLisenter != null) {
+                    captureLisenter.recordError();
+                    state = STATE_NULL;
+                    return;
+                }
+            }
+            startAnimation(
+                    button_outside_radius,
+                    button_outside_radius + outside_add_size,
+                    button_inside_radius,
+                    button_inside_radius - inside_reduce_size
+            );
         }
     }
 
@@ -234,6 +268,15 @@ public class CaptureButton extends View {
             record_anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
+//                    if (!hasWindowFocus) {
+//                        //移除录制视频的Runnable
+//                        removeCallbacks(recordRunnable);
+//                        resetRecordAnim();
+//                        //制空当前状态
+//                        state = STATE_NULL;
+//                        hasWindowFocus = true;
+//                        return;
+//                    }
                     if (state == STATE_PRESS_LONG_CLICK) {
                         //更新录制进度
                         progress = (float) animation.getAnimatedValue();
@@ -257,15 +300,25 @@ public class CaptureButton extends View {
         }
     }
 
+
+    @Override
+    public void onWindowFocusChanged(boolean hasWindowFocus) {
+        super.onWindowFocusChanged(hasWindowFocus);
+        if (hasWindowFocus) {
+            handlerUnpressByState();
+        }
+    }
+
     /**
      * 录制结束
+     *
      * @param finish 是否录制满时间
      */
     private void recordEnd(boolean finish) {
         state = STATE_UNPRESS_LONG_CLICK;
         if (captureLisenter != null) {
             //录制时间小于一秒时候则提示录制时间过短
-            if (record_anim.getCurrentPlayTime() < 1000 && !finish) {
+            if (record_anim.getCurrentPlayTime() < 1500 && !finish) {
                 captureLisenter.recordShort(record_anim.getCurrentPlayTime());
             } else {
                 if (finish) {
@@ -275,13 +328,22 @@ public class CaptureButton extends View {
                 }
             }
         }
+        resetRecordAnim();
+    }
+
+    private void resetRecordAnim() {
         //取消动画
         record_anim.cancel();
         //重制进度
         progress = 0;
         invalidate();
         //还原按钮初始状态动画
-        startAnimation(button_outside_radius, button_radius, button_inside_radius, button_radius * 0.75f);
+        startAnimation(
+                button_outside_radius,
+                button_radius,
+                button_inside_radius,
+                button_radius * 0.75f
+        );
     }
 
     //capture button outside and inside resize animation
@@ -336,5 +398,10 @@ public class CaptureButton extends View {
     //设置回调接口
     public void setCaptureLisenter(CaptureLisenter captureLisenter) {
         this.captureLisenter = captureLisenter;
+    }
+
+    //设置按钮功能（拍照和录像）
+    public void setButtonFeatures(int state) {
+        this.button_state = state;
     }
 }

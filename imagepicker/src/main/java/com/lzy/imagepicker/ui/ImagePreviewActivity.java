@@ -1,5 +1,6 @@
 package com.lzy.imagepicker.ui;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -38,10 +39,12 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
     private Button mBtnOk;                         //确认图片的选择
     private View bottomBar;
     private ImageView playIcon;
+    private Context mContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mContext = this.getApplicationContext();
 
         isOrigin = getIntent().getBooleanExtra(ImagePreviewActivity.ISORIGIN, false);
         imagePicker.addOnImageSelectedListener(this);
@@ -101,10 +104,28 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
             @Override
             public void onClick(View v) {
                 MediaItem mediaItem = mMediaItems.get(mCurrentPosition);
+                File file = new File(mediaItem.path);
+                if (!file.exists()) {
+                    Toast.makeText(mContext,
+                            ImagePreviewActivity.this.getApplicationContext().getString(R.string.file_not_exist),
+                            Toast.LENGTH_SHORT).show();
+                    mCbCheck.setChecked(false);
+                    return;
+                }
                 int selectLimit = imagePicker.getMediaLimit();
                 int videoLimit = imagePicker.getVideoLimit();
                 String mimeType = mediaItem.mimeType;
                 if (mimeType.startsWith("video")) {
+                    if (mediaItem.duration > 10500) {
+                        Toast.makeText(getApplicationContext(), getString(R.string.video_too_long), Toast.LENGTH_SHORT).show();
+                        mCbCheck.setChecked(false);
+                        return;
+                    }
+                    if (!mimeType.equals("video/mp4") || !mediaItem.path.endsWith(".mp4")) { // 判断是否是 mp4 文件
+                        Toast.makeText(getApplicationContext(), getString(R.string.not_support_video), Toast.LENGTH_SHORT).show();
+                        mCbCheck.setChecked(false);
+                        return;
+                    }
                     if (mCbCheck.isChecked() && selectedVideos.size() >= videoLimit) {
                         Toast.makeText(ImagePreviewActivity.this, ImagePreviewActivity.this.getString(R.string.video_limit, videoLimit), Toast.LENGTH_SHORT).show();
                         mCbCheck.setChecked(false);
@@ -118,6 +139,11 @@ public class ImagePreviewActivity extends ImagePreviewBaseActivity implements Im
                         }
                     }
                 } else {
+                    if (!imagePicker.isSupportImage(mediaItem)) {
+                        Toast.makeText(mContext, mContext.getString(R.string.not_support_image), Toast.LENGTH_SHORT).show();
+                        mCbCheck.setChecked(false);
+                        return;
+                    }
                     if (mCbCheck.isChecked() && selectedImages.size() >= selectLimit) {
                         Toast.makeText(ImagePreviewActivity.this, ImagePreviewActivity.this.getString(R.string.select_limit, selectLimit), Toast.LENGTH_SHORT).show();
                         mCbCheck.setChecked(false);

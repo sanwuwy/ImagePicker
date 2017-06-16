@@ -4,13 +4,14 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.RelativeLayout;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.cjt2325.cameralibrary.lisenter.CaptureLisenter;
@@ -27,7 +28,7 @@ import com.cjt2325.cameralibrary.lisenter.TypeLisenter;
  * =====================================
  */
 
-public class CaptureLayout extends RelativeLayout {
+public class CaptureLayout extends FrameLayout {
     //拍照按钮监听
     private CaptureLisenter captureLisenter;
     //拍照或录制后接结果按钮监听
@@ -72,9 +73,14 @@ public class CaptureLayout extends RelativeLayout {
         WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         DisplayMetrics outMetrics = new DisplayMetrics();
         manager.getDefaultDisplay().getMetrics(outMetrics);
-        layout_width = outMetrics.widthPixels;
+
+        if (this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            layout_width = outMetrics.widthPixels;
+        } else {
+            layout_width = outMetrics.widthPixels / 2;
+        }
         button_size = (int) (layout_width / 4.5f);
-        layout_height = button_size + (button_size / 5) * 2 + 80;
+        layout_height = button_size + (button_size / 5) * 2 + 100;
 
         initView();
         initEvent();
@@ -93,6 +99,7 @@ public class CaptureLayout extends RelativeLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
+//        canvas.drawColor(0xffff0000);
         super.onDraw(canvas);
     }
 
@@ -139,14 +146,14 @@ public class CaptureLayout extends RelativeLayout {
 
     private void initView() {
         setWillNotDraw(false);
-
         //btn_capture
         btn_capture = new CaptureButton(getContext(), button_size);
         LayoutParams btn_capture_param = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-        btn_capture_param.addRule(CENTER_IN_PARENT, TRUE);
-        btn_capture_param.setMargins(0, 152, 0, 0);
+//        btn_capture_param.addRule(CENTER_IN_PARENT, TRUE);
+        btn_capture_param.gravity = Gravity.CENTER;
+//        btn_capture_param.setMargins(0, 152, 0, 0);
         btn_capture.setLayoutParams(btn_capture_param);
-        btn_capture.setDuration(5000);
+        btn_capture.setDuration(10 * 1000);
         btn_capture.setCaptureLisenter(new CaptureLisenter() {
             @Override
             public void takePictures() {
@@ -186,14 +193,22 @@ public class CaptureLayout extends RelativeLayout {
                     captureLisenter.recordZoom(zoom);
                 }
             }
+
+            @Override
+            public void recordError() {
+                if (captureLisenter != null) {
+                    captureLisenter.recordError();
+                }
+            }
         });
 
         //btn_cancel
 
         btn_cancel = new TypeButton(getContext(), TypeButton.TYPE_CANCEL, button_size);
         final LayoutParams btn_cancel_param = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-        btn_cancel_param.addRule(CENTER_VERTICAL, TRUE);
-        btn_cancel_param.addRule(ALIGN_PARENT_LEFT, TRUE);
+//        btn_cancel_param.addRule(CENTER_VERTICAL, TRUE);
+//        btn_cancel_param.addRule(ALIGN_PARENT_LEFT, TRUE);
+        btn_cancel_param.gravity = Gravity.CENTER_VERTICAL;
         btn_cancel_param.setMargins((layout_width / 4) - button_size / 2, 0, 0, 0);
         btn_cancel.setLayoutParams(btn_cancel_param);
         btn_cancel.setOnClickListener(new OnClickListener() {
@@ -214,8 +229,9 @@ public class CaptureLayout extends RelativeLayout {
 
         btn_confirm = new TypeButton(getContext(), TypeButton.TYPE_CONFIRM, button_size);
         LayoutParams btn_confirm_param = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-        btn_confirm_param.addRule(CENTER_VERTICAL, TRUE);
-        btn_confirm_param.addRule(ALIGN_PARENT_RIGHT, TRUE);
+//        btn_confirm_param.addRule(CENTER_VERTICAL, TRUE);
+//        btn_confirm_param.addRule(ALIGN_PARENT_RIGHT, TRUE);
+        btn_confirm_param.gravity = Gravity.CENTER_VERTICAL | Gravity.RIGHT;
         btn_confirm_param.setMargins(0, 0, (layout_width / 4) - button_size / 2, 0);
         btn_confirm.setLayoutParams(btn_confirm_param);
         btn_confirm.setOnClickListener(new OnClickListener() {
@@ -235,7 +251,8 @@ public class CaptureLayout extends RelativeLayout {
         //btn_return
         btn_return = new ReturnButton(getContext(), button_size / 2);
         LayoutParams btn_return_param = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        btn_return_param.addRule(CENTER_VERTICAL, TRUE);
+//        btn_return_param.addRule(CENTER_VERTICAL, TRUE);
+        btn_return_param.gravity = Gravity.CENTER_VERTICAL;
         btn_return_param.setMargins(layout_width / 6, 0, 0, 0);
         btn_return.setLayoutParams(btn_return_param);
         btn_return.setOnClickListener(new OnClickListener() {
@@ -253,6 +270,7 @@ public class CaptureLayout extends RelativeLayout {
 
         txt_tip = new TextView(getContext());
         LayoutParams txt_param = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        txt_param.gravity = Gravity.CENTER_HORIZONTAL;
         txt_param.setMargins(0, 0, 0, 0);
         txt_tip.setText("轻触拍照，长按摄像");
         txt_tip.setTextColor(0xFFFFFFFF);
@@ -267,10 +285,10 @@ public class CaptureLayout extends RelativeLayout {
 
     }
 
-    public void setTextWithAnimation() {
-        txt_tip.setText("录制时间过短");
+    public void setTextWithAnimation(String tip) {
+        txt_tip.setText(tip);
         ObjectAnimator animator_txt_tip = ObjectAnimator.ofFloat(txt_tip, "alpha", 0f, 1f, 1f, 0f);
-        animator_txt_tip.setDuration(3000);
+        animator_txt_tip.setDuration(2500);
         animator_txt_tip.start();
     }
 
@@ -278,18 +296,19 @@ public class CaptureLayout extends RelativeLayout {
         btn_capture.setDuration(duration);
     }
 
-    /**
-     * 设置是否只拍照不摄像
-     *
-     * @param justPicture
-     */
-    public void setJustPicture(boolean justPicture) {
-        if (btn_capture != null) {
-            btn_capture.setJustPicture(justPicture);
-        }
-        if (txt_tip != null) {
+    public void isRecord(boolean record) {
+        btn_capture.isRecord(record);
+    }
+
+    public void setButtonFeatures(int state) {
+        if (state == JCameraView.BUTTON_STATE_ONLY_CAPTURE) {
             txt_tip.setText("轻触拍照");
+        } else if (state == JCameraView.BUTTON_STATE_BOTH) {
+            txt_tip.setText("轻触拍照，长按摄像");
+        } else if (state == JCameraView.BUTTON_STATE_ONLY_RECORDER) {
+            txt_tip.setText("长按摄像");
         }
+        btn_capture.setButtonFeatures(state);
     }
 
 }

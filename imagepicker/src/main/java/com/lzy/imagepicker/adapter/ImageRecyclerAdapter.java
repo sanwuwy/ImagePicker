@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.ViewHolder;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.cjt2325.cameralibrary.JCameraView;
 import com.lzy.imagepicker.ImagePicker;
 import com.lzy.imagepicker.R;
 import com.lzy.imagepicker.bean.MediaItem;
@@ -21,11 +23,14 @@ import com.lzy.imagepicker.ui.ImageGridActivity;
 import com.lzy.imagepicker.util.Utils;
 import com.lzy.imagepicker.view.SuperCheckBox;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * 加载相册图片的RecyclerView适配器
@@ -159,12 +164,13 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
         void bind(final int position) {
             final MediaItem mediaItem = getItem(position);
             final String mimeType = mediaItem.mimeType;
-            videoIcon.setVisibility(View.GONE);
-            videoDuration.setVisibility(View.GONE);
             if (mimeType.startsWith("video")) {
                 videoIcon.setVisibility(View.VISIBLE);
                 videoDuration.setVisibility(View.VISIBLE);
                 videoDuration.setText(formatDuration(mediaItem.duration));
+            } else {
+                videoIcon.setVisibility(View.GONE);
+                videoDuration.setVisibility(View.GONE);
             }
             ivThumb.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -175,9 +181,28 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
             cbCheck.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    File file = new File(mediaItem.path);
+                    if (!file.exists()) {
+                        Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.file_not_exist), Toast.LENGTH_SHORT).show();
+                        cbCheck.setChecked(false);
+                        mask.setVisibility(View.GONE);
+                        return;
+                    }
                     int mediaLimit = imagePicker.getMediaLimit();
                     int videoLimit = imagePicker.getVideoLimit();
                     if (mimeType.startsWith("video")) {
+                        if (mediaItem.duration > 10500) {
+                            Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.video_too_long), Toast.LENGTH_SHORT).show();
+                            cbCheck.setChecked(false);
+                            mask.setVisibility(View.GONE);
+                            return;
+                        }
+                        if (!mimeType.equals("video/mp4") || !mediaItem.path.endsWith(".mp4")) { // 判断是否是 mp4 文件
+                            Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.not_support_video), Toast.LENGTH_SHORT).show();
+                            cbCheck.setChecked(false);
+                            mask.setVisibility(View.GONE);
+                            return;
+                        }
                         if (cbCheck.isChecked() && mSelectedVideos.size() >= videoLimit) {
                             Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.video_limit, videoLimit), Toast.LENGTH_SHORT).show();
                             cbCheck.setChecked(false);
@@ -193,7 +218,14 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
                                 mask.setVisibility(View.VISIBLE);
                             }
                         }
+
                     } else {
+                        if (!imagePicker.isSupportImage(mediaItem)) {
+                            Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.not_support_image), Toast.LENGTH_SHORT).show();
+                            cbCheck.setChecked(false);
+                            mask.setVisibility(View.GONE);
+                            return;
+                        }
                         if (cbCheck.isChecked() && mSelectedImages.size() >= mediaLimit) {
                             Toast.makeText(mActivity.getApplicationContext(), mActivity.getString(R.string.select_limit, mediaLimit), Toast.LENGTH_SHORT).show();
                             cbCheck.setChecked(false);
@@ -249,7 +281,7 @@ public class ImageRecyclerAdapter extends RecyclerView.Adapter<ViewHolder> {
                     if (!((ImageBaseActivity) mActivity).checkPermission(Manifest.permission.CAMERA)) {
                         ActivityCompat.requestPermissions(mActivity, new String[]{Manifest.permission.CAMERA}, ImageGridActivity.REQUEST_PERMISSION_CAMERA);
                     } else {
-                        imagePicker.takePicture(mActivity, ImagePicker.REQUEST_CODE_TAKE, false);
+                        imagePicker.takePicture(mActivity, ImagePicker.REQUEST_CODE_TAKE, JCameraView.BUTTON_STATE_BOTH);
                     }
                 }
             });

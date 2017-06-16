@@ -74,7 +74,7 @@ public class ImageGridActivity extends ImageBaseActivity implements ImageDataSou
     private List<MediaFolder> mMediaFolders;   //所有的图片文件夹
     //    private ImageGridAdapter mImageGridAdapter;  //图片九宫格展示的适配器
     private boolean directPhoto = false; // 默认不是直接调取相机
-    private boolean justPicture = false; // 默认只调取相机的拍照功能
+    private int typeCapture = JCameraView.BUTTON_STATE_BOTH;
     private RecyclerView mRecyclerView;
     private ImageRecyclerAdapter mRecyclerAdapter;
 
@@ -105,12 +105,12 @@ public class ImageGridActivity extends ImageBaseActivity implements ImageDataSou
         // 新增可直接拍照
         if (data != null && data.getExtras() != null) {
             directPhoto = data.getBooleanExtra(EXTRAS_TAKE_PICKERS, false); // 默认不是直接打开相机
-            justPicture = data.getBooleanExtra(JCameraView.TYPE_CAPTURE, false); // 是否只用相机的拍照功能
+            typeCapture = data.getIntExtra(JCameraView.TYPE_CAPTURE, JCameraView.BUTTON_STATE_BOTH); // 是否只用相机的拍照功能
             if (directPhoto) {
                 if (!(checkPermission(Manifest.permission.CAMERA))) {
                     ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, ImageGridActivity.REQUEST_PERMISSION_CAMERA);
                 } else {
-                    imagePicker.takePicture(this, ImagePicker.REQUEST_CODE_TAKE, justPicture);
+                    imagePicker.takePicture(this, ImagePicker.REQUEST_CODE_TAKE, typeCapture);
                 }
             }
             ArrayList<MediaItem> images = (ArrayList<MediaItem>) data.getSerializableExtra(EXTRAS_IMAGES);
@@ -171,7 +171,7 @@ public class ImageGridActivity extends ImageBaseActivity implements ImageDataSou
             }
         } else if (requestCode == REQUEST_PERMISSION_CAMERA) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                imagePicker.takePicture(this, ImagePicker.REQUEST_CODE_TAKE, justPicture);
+                imagePicker.takePicture(this, ImagePicker.REQUEST_CODE_TAKE, typeCapture);
             } else {
                 showToast("权限被禁止，无法打开相机");
             }
@@ -418,6 +418,7 @@ public class ImageGridActivity extends ImageBaseActivity implements ImageDataSou
                     intent.putExtra(ImagePicker.EXTRA_RESULT_ITEMS, selectedMedias);
                     intent.putExtra(ImagePicker.EXTRA_RESULT_VIDEOS, imagePicker.getSelectedVideos());
                     setResult(ImagePicker.RESULT_CODE_ITEMS, intent);
+
                 }
                 finish();
             }

@@ -1,6 +1,7 @@
 apply plugin: 'com.android.library'
 
 android {
+    publishNonDefault true
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
 
@@ -20,10 +21,14 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:25.1.1'
+    compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.github.chrisbanes.photoview:library:1.2.4'
-    compile 'com.android.support:recyclerview-v7:25.1.1'
-    compile project(':lib_Camera')
+    compile 'com.android.support:recyclerview-v7:25.3.1'
+    compile 'com.danikula:videocache:2.7.0'
+//    compile project(':lib_Camera')
+
+    debugCompile project(path: ':lib_Camera', configuration: "debug")
+    releaseCompile project(path: ':lib_Camera', configuration: "release")
 }
 
 //apply from: '../bintray.gradle'

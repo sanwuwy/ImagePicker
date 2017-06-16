@@ -1,7 +1,6 @@
 package com.cjt2325.cameralibrary.util;
 
 import android.hardware.Camera;
-import android.util.Log;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -37,8 +36,8 @@ public class CameraParamUtil {
         Collections.sort(list, sizeComparator);
         int i = 0;
         for (Camera.Size s : list) {
-            if ((s.width > th) && equalRate(s, rate)) {
-                Log.i(TAG, "MakeSure Preview :w = " + s.width + " h = " + s.height);
+            if ((s.width >= th) && equalRate(s, rate)) {
+                Logger.i(TAG, "MakeSure Preview :w = " + s.width + " h = " + s.height);
                 break;
             }
             i++;
@@ -55,8 +54,8 @@ public class CameraParamUtil {
 
         int i = 0;
         for (Camera.Size s : list) {
-            if ((s.width > th) && equalRate(s, rate)) {
-                Log.i(TAG, "MakeSure Picture :w = " + s.width + " h = " + s.height);
+            if ((s.width >= th) && equalRate(s, rate)) {
+                Logger.i(TAG, "MakeSure Picture :w = " + s.width + " h = " + s.height);
                 break;
             }
             i++;
@@ -91,22 +90,22 @@ public class CameraParamUtil {
     public boolean isSupportedFocusMode(List<String> focusList, String focusMode) {
         for (int i = 0; i < focusList.size(); i++) {
             if (focusMode.equals(focusList.get(i))) {
-                Log.i(TAG, "FocusMode supported " + focusMode);
+                Logger.i(TAG, "FocusMode supported " + focusMode);
                 return true;
             }
         }
-        Log.i(TAG, "FocusMode not supported " + focusMode);
+        Logger.i(TAG, "FocusMode not supported " + focusMode);
         return false;
     }
 
     public boolean isSupportedPictureFormats(List<Integer> supportedPictureFormats, int jpeg) {
         for (int i = 0; i < supportedPictureFormats.size(); i++) {
             if (jpeg == supportedPictureFormats.get(i)) {
-                Log.i(TAG, "Formats supported " + jpeg);
+                Logger.i(TAG, "Formats supported " + jpeg);
                 return true;
             }
         }
-        Log.i(TAG, "Formats not supported " + jpeg);
+        Logger.i(TAG, "Formats not supported " + jpeg);
         return false;
     }
 

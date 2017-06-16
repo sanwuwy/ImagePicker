@@ -26,13 +26,20 @@ import java.util.ArrayList;
  */
 public class ImagePreviewDelActivity extends ImagePreviewBaseActivity implements View.OnClickListener {
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         ImageView mBtnDel = (ImageView) findViewById(R.id.btn_del);
+        boolean showDel = getIntent().getBooleanExtra(ImagePicker.EXTRA_SHOW_DEL, true);
         mBtnDel.setOnClickListener(this);
-        mBtnDel.setVisibility(View.VISIBLE);
+        if (showDel) {
+            mBtnDel.setVisibility(View.VISIBLE);
+        } else {
+            mBtnDel.setVisibility(View.GONE);
+        }
         topBar.findViewById(R.id.btn_back).setOnClickListener(this);
 
         mTitleCount.setText(getString(R.string.preview_image_count, mCurrentPosition + 1, mMediaItems.size()));

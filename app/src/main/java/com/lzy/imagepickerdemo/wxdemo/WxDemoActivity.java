@@ -57,7 +57,7 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
         ImagePicker imagePicker = ImagePicker.getInstance();
         imagePicker.setImageLoader(new GlideImageLoader());   //设置图片加载器
         imagePicker.setShowCamera(false);                      //显示拍照按钮
-        imagePicker.setCrop(true);                           //允许裁剪（单选才有效）
+        imagePicker.setCrop(false);                           //允许裁剪（单选才有效）
         imagePicker.setSaveRectangle(true);                   //是否按矩形区域保存
         imagePicker.setMediaLimit(maxImgCount);              //选中媒体文件数量限制
         imagePicker.setVideoLimit(maxVideoCount);             //选中视频数量限制
@@ -107,7 +107,7 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
                         Intent intent = new Intent(WxDemoActivity.this, ImageGridActivity.class);
                         if (videoCount <= 0) {
                             intent.putExtra(ImageGridActivity.EXTRAS_LOAD_TYPE, ImageDataSource.LOADER_ALL_IMAGE);
-                            intent.putExtra(JCameraView.TYPE_CAPTURE, true);
+                            intent.putExtra(JCameraView.TYPE_CAPTURE, JCameraView.BUTTON_STATE_ONLY_CAPTURE);
                         } else {
                             intent.putExtra(ImageGridActivity.EXTRAS_LOAD_TYPE, ImageDataSource.LOADER_ALL);
                         }

@@ -12,6 +12,7 @@ import android.os.Build.VERSION_CODES;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.cjt2325.cameralibrary.CaptureActivity;
@@ -27,8 +28,10 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * ================================================
@@ -59,6 +62,7 @@ public class ImagePicker {
     public static final String EXTRA_IMAGE_ITEMS = "extra_image_items";
     public static final String EXTRA_VIDEO_ITEMS = "extra_video_items";
     public static final String EXTRA_FROM_ITEMS = "extra_from_items";
+    public static final String EXTRA_SHOW_DEL = "extra_show_del";
 
     private boolean multiMode = true;    //图片选择模式
     private int mediaLimit = 9;         //最大选择图片数量
@@ -294,10 +298,10 @@ public class ImagePicker {
     /**
      * 拍照的方法
      */
-    public void takePicture(Activity activity, int requestCode, boolean justPicture) {
+    public void takePicture(Activity activity, int requestCode, int typeCapture) {
         Intent takePictureIntent = new Intent(activity, CaptureActivity.class);
         takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        takePictureIntent.putExtra(JCameraView.TYPE_CAPTURE, justPicture);
+        takePictureIntent.putExtra(JCameraView.TYPE_CAPTURE, typeCapture);
         activity.startActivityForResult(takePictureIntent, requestCode);
 //        if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
 //            if (Utils.existSDCard())
@@ -405,6 +409,26 @@ public class ImagePicker {
         for (OnImageSelectedListener l : mImageSelectedListeners) {
             l.onImageSelected(position, item, isAdd);
         }
+    }
+
+    /**
+     * 是否是支持的图片格式
+     * @param mediaItem
+     * @return
+     */
+    public boolean isSupportImage(MediaItem mediaItem) {
+        Map<String, String> map = new HashMap<>();
+        map.put("jpeg", "image/jpeg");
+        map.put("jpg", "image/jpeg");
+        map.put("png", "image/png");
+        String extension = mediaItem.path.substring(mediaItem.path.lastIndexOf(".") + 1);
+        String value = map.get(extension);
+        if (!TextUtils.isEmpty(value)) {
+            if (value.equals(mediaItem.mimeType)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

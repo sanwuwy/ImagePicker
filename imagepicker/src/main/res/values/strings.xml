@@ -6,6 +6,10 @@
     <string name="preview_image_count">%1$s/%2$s</string>
     <string name="select_limit">最多选择%1$s个文件</string>
     <string name="video_limit">最多选择%1$s个视频</string>
+    <string name="not_support_image">不支持的图片格式</string>
+    <string name="not_support_video">不支持的视频格式</string>
+    <string name="video_too_long">视频时间大于10s</string>
+    <string name="file_not_exist">文件已损坏或不存在</string>
     <string name="complete">完成</string>
     <string name="select_complete">完成(%1$s/%2$s)</string>
     <string name="preview_count">预览(%1$s)</string>
@@ -13,4 +17,6 @@
     <string name="origin">原图</string>
     <string name="origin_size">原图(%1$s)</string>
     <string name="media_play_complete">播放完成</string>
+    <string name="media_play_fail">播放失败，请重试！</string>
+    <string name="mobile_network">使用移动网络查看</string>
 </resources>
